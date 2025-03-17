@@ -1,1 +1,3 @@
-# open-modular
+# Open Modular
+
+Modular Synthesis in Rust
