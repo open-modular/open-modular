@@ -1,5 +1,5 @@
 {
-  description = "Phased Structures";
+  description = "Open Modular";
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
