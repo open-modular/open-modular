@@ -1,4 +1,4 @@
-# Architectural Decision Records
+# Architectural Decision Records (ADRs)
 
 Open Modular uses Architectural Decision Records (ADRs) to track key design and implementation decisions. See the [first decision record][0] for more information. If you're using Rust, the [`adrs`][1] tool is useful for creating, editing, etc. these records, and can be installed using `cargo`. This is probably more straightforward to use and up-to-date than the original tooling mentioned in the first ADR.
 
