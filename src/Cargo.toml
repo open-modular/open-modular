@@ -1,18 +1,18 @@
 [workspace]
 members = [
-    "src/bin/*",
-    "src/lib/core",
-    "src/lib/engine",
-    "src/lib/engine/macros",
-    "src/lib/io",
-    "src/lib/io/audio",
-    "src/lib/perf",
-    "src/lib/runtime",
-    "src/lib/runtime/production",
-    "src/lib/sync",
-    "src/lib/utils",
-    "src/mod/io",
-    "src/mod/io/audio",
+    "bin/*",
+    "lib/core",
+    "lib/engine",
+    "lib/engine/macros",
+    "lib/io",
+    "lib/io/audio",
+    "lib/perf",
+    "lib/runtime",
+    "lib/runtime/production",
+    "lib/sync",
+    "lib/utils",
+    "mod/io",
+    "mod/io/audio",
 ]
 resolver = "2"
 
@@ -25,18 +25,18 @@ darling                         = "0.20"
 derive_more                     = { features = ["full"], version = "2" }
 fancy_constructor               = "2"
 oneshot                         = { default-features = false, features = ["std"], version = "0.1" }
-open-modular-core               = { path = "src/lib/core" }
-open-modular-engine             = { path = "src/lib/engine" }
-open-modular-engine-macros      = { path = "src/lib/engine/macros" }
-open-modular-io                 = { path = "src/lib/io" }
-open-modular-io-audio           = { path = "src/lib/io/audio" }
-open-modular-module-io          = { path = "src/mod/io" }
-open-modular-module-io-audio    = { path = "src/mod/io/audio" }
-open-modular-perf               = { path = "src/lib/perf" }
-open-modular-runtime            = { path = "src/lib/runtime" }
-open-modular-runtime-production = { path = "src/lib/runtime/production" }
-open-modular-sync               = { path = "src/lib/sync" }
-open-modular-utils              = { path = "src/lib/utils" }
+open-modular-core               = { path = "lib/core" }
+open-modular-engine             = { path = "lib/engine" }
+open-modular-engine-macros      = { path = "lib/engine/macros" }
+open-modular-io                 = { path = "lib/io" }
+open-modular-io-audio           = { path = "lib/io/audio" }
+open-modular-module-io          = { path = "mod/io" }
+open-modular-module-io-audio    = { path = "mod/io/audio" }
+open-modular-perf               = { path = "lib/perf" }
+open-modular-runtime            = { path = "lib/runtime" }
+open-modular-runtime-production = { path = "lib/runtime/production" }
+open-modular-sync               = { path = "lib/sync" }
+open-modular-utils              = { path = "lib/utils" }
 proc-macro2                     = "1"
 quote                           = "1"
 rtaudio-sys                     = "0.3"
@@ -45,9 +45,6 @@ thread-priority                 = "1"
 tracing                         = { features = ["max_level_trace", "release_max_level_info"], version = "0.1" }
 tracing-subscriber              = { features = ["env-filter"], version = "0.3" }
 uuid                            = { features = ["v4"], version = "1" }
-
-[workspace.clippy]
-allowed_duplicate_crates = ["convert_case"]
 
 [workspace.lints.clippy]
 cargo       = "warn"
