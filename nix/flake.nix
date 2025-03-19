@@ -27,10 +27,10 @@
           inherit system overlays;
         };
         rust = (
-          if builtins.pathExists ./src/rust-toolchain.toml
-          then pkgs.rust-bin.fromRustupToolchainFile ./src/rust-toolchain.toml
-          else if builtins.pathExists ./src/rust-toolchain
-          then pkgs.rust-bin.fromRustupToolchainFile ./src/rust-toolchain
+          if builtins.pathExists ../src/rust-toolchain.toml
+          then pkgs.rust-bin.fromRustupToolchainFile ../src/rust-toolchain.toml
+          else if builtins.pathExists ../src/rust-toolchain
+          then pkgs.rust-bin.fromRustupToolchainFile ../src/rust-toolchain
           else
             pkgs.rust-bin.stable.latest.default.override {
               extensions = [
