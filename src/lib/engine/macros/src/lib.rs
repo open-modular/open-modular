@@ -1,7 +1,3 @@
-#![allow(clippy::cargo_common_metadata)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::missing_safety_doc)]
-
 mod module;
 mod module_enum;
 

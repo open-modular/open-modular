@@ -1,0 +1,1 @@
+allowed_duplicate_crates = ["convert_case"]

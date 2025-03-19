@@ -345,6 +345,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "open-modular-module-io"
+version = "0.1.0"
+dependencies = [
+ "open-modular-module-io-audio",
+]
+
+[[package]]
+name = "open-modular-module-io-audio"
+version = "0.1.0"
+dependencies = [
+ "derive_more",
+ "fancy_constructor",
+ "open-modular-core",
+ "open-modular-engine",
+ "open-modular-runtime",
+ "open-modular-utils",
+ "tracing",
+]
+
+[[package]]
 name = "open-modular-perf"
 version = "0.1.0"
 dependencies = [

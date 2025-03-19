@@ -11,6 +11,8 @@ members = [
     "src/lib/runtime/production",
     "src/lib/sync",
     "src/lib/utils",
+    "src/mod/io",
+    "src/mod/io/audio",
 ]
 resolver = "2"
 
@@ -28,6 +30,8 @@ open-modular-engine             = { path = "src/lib/engine" }
 open-modular-engine-macros      = { path = "src/lib/engine/macros" }
 open-modular-io                 = { path = "src/lib/io" }
 open-modular-io-audio           = { path = "src/lib/io/audio" }
+open-modular-module-io          = { path = "src/mod/io" }
+open-modular-module-io-audio    = { path = "src/mod/io/audio" }
 open-modular-perf               = { path = "src/lib/perf" }
 open-modular-runtime            = { path = "src/lib/runtime" }
 open-modular-runtime-production = { path = "src/lib/runtime/production" }
@@ -41,6 +45,9 @@ thread-priority                 = "1"
 tracing                         = { features = ["max_level_trace", "release_max_level_info"], version = "0.1" }
 tracing-subscriber              = { features = ["env-filter"], version = "0.3" }
 uuid                            = { features = ["v4"], version = "1" }
+
+[workspace.clippy]
+allowed_duplicate_crates = ["convert_case"]
 
 [workspace.lints.clippy]
 cargo       = "warn"

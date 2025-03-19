@@ -1,4 +1,3 @@
-#![allow(clippy::multiple_crate_versions)]
 #![feature(sync_unsafe_cell)]
 
 pub mod context;

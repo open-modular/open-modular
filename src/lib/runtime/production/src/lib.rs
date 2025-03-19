@@ -1,4 +1,3 @@
-#![allow(clippy::multiple_crate_versions)]
 #![feature(portable_simd)]
 #![feature(sync_unsafe_cell)]
 #![feature(trait_alias)]
