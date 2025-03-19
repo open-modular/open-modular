@@ -23,6 +23,8 @@ This repository (currently) contains everything related to Open Modular, so a qu
 | [`/env`](/env) | Environment configuration tools (currently a [`Nix`][2] flake for configuring a basic dev shell, used by the default [direnv][3] [`.envrc` file](.envrc)) is located in the [`/env`](/env) directory. |
 | [`/src`](/src) | Rust code (in the form of a multi-crate workspace) is contained in the [`/src`](/src) directory. When working with the Open Modular codebase, this should be considered the Rust "root" directory for CLI usage, etc. Cargo commands or other related actions will not work at higher levels. |
 
+In general, most significant locations in the repository will contain their own `README.md` file which will give more specific detail and explanation on content and usage. This includes specific crates within the [`/src`](/src) directory, which should all give clear expectations on their scope and implementation approaches (and potentially links to any ADRs which apply).
+
 [0]: https://www.rust-lang.org/
 [1]: https://github.com/joshrotenberg/adrs
 [2]: https://nixos.org/
