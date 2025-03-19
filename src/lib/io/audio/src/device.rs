@@ -4,7 +4,11 @@ use std::{
 };
 
 use fancy_constructor::new;
-use open_modular_core::MAX_CHANNELS_U32;
+use open_modular_core::{
+    MAX_CHANNELS_U32,
+    MIN_CHANNELS_U32,
+    SAMPLE_RATE_U32,
+};
 use rtaudio_sys::{
     RTAUDIO_FORMAT_FLOAT32,
     RTAUDIO_FORMAT_FLOAT64,
@@ -191,8 +195,13 @@ where
     T: Iterator<Item = DeviceInfo>,
 {
     fn output(self) -> impl Iterator<Item = DeviceInfo> {
-        self.filter(|device_info| device_info.channels.output >= 2)
+        self.filter(|device_info| device_info.channels.output >= MIN_CHANNELS_U32)
             .filter(|device_info| device_info.formats.contains(DeviceFormatsInfo::F32))
-            .filter(|device_info| device_info.sample_rates.available.contains(&48000))
+            .filter(|device_info| {
+                device_info
+                    .sample_rates
+                    .available
+                    .contains(&SAMPLE_RATE_U32)
+            })
     }
 }

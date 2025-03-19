@@ -26,6 +26,7 @@ pub static BUFFER_DURATION: Duration = Duration::from_nanos(NANOSECONDS_PER_BUFF
 pub static BUFFER_FRAMES_U32: u32 = BUFFER_FRAMES as u32;
 pub static BUFFER_FRAMES_F64: f64 = BUFFER_FRAMES as f64;
 pub static FRAME_DURATION: Duration = Duration::from_nanos(NANOSECONDS_PER_FRAME as u64);
+pub static MIN_CHANNELS_U32: u32 = 2;
 pub static MAX_CHANNELS_U32: u32 = 16;
 pub static SAMPLE_RATE_U32: u32 = SAMPLE_RATE as u32;
 pub static SAMPLE_RATE_F64: f64 = SAMPLE_RATE as f64;
