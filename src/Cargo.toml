@@ -11,8 +11,10 @@ members = [
     "lib/runtime/production",
     "lib/sync",
     "lib/utils",
+    "mod/gen",
     "mod/io",
     "mod/io/audio",
+    "mod/util",
 ]
 resolver = "2"
 
@@ -52,8 +54,10 @@ open-modular-utils              = { path = "lib/utils" }
 
 # Workspace (Modules)
 
+open-modular-module-gen      = { path = "mod/gen" }
 open-modular-module-io       = { path = "mod/io" }
 open-modular-module-io-audio = { path = "mod/io/audio" }
+open-modular-module-util     = { path = "mod/util" }
 
 [workspace.lints.clippy]
 cargo       = "warn"

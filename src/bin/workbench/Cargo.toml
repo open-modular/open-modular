@@ -1,4 +1,12 @@
 [dependencies]
+open-modular-engine.workspace             = true
+open-modular-module-gen.workspace         = true
+open-modular-module-io.workspace          = true
+open-modular-module-util.workspace        = true
+open-modular-runtime.workspace            = true
+open-modular-runtime-production.workspace = true
+tracing.workspace                         = true
+tracing-subscriber.workspace              = true
 
 [lints]
 workspace = true
