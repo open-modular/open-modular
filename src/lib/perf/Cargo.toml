@@ -1,0 +1,20 @@
+[dependencies]
+crossbeam.workspace         = true
+derive_more.workspace       = true
+fancy_constructor.workspace = true
+tracing.workspace           = true
+
+[lints]
+workspace = true
+
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "Open Modular Performance"
+edition.workspace    = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "open-modular-perf"
+readme.workspace     = true
+repository.workspace = true
+version.workspace    = true

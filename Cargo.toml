@@ -1,0 +1,71 @@
+[workspace]
+members = [
+    "src/bin/*",
+    "src/lib/core",
+    "src/lib/engine",
+    "src/lib/engine/macros",
+    "src/lib/io",
+    "src/lib/io/audio",
+    "src/lib/perf",
+    "src/lib/runtime",
+    "src/lib/runtime/production",
+    "src/lib/sync",
+    "src/lib/utils",
+]
+resolver = "2"
+
+[workspace.dependencies]
+bitflags                        = "2"
+bon                             = "3"
+convert_case                    = "0.8"
+crossbeam                       = "0.8"
+darling                         = "0.20"
+derive_more                     = { features = ["full"], version = "2" }
+fancy_constructor               = "2"
+oneshot                         = { default-features = false, features = ["std"], version = "0.1" }
+open-modular-core               = { path = "src/lib/core" }
+open-modular-engine             = { path = "src/lib/engine" }
+open-modular-engine-macros      = { path = "src/lib/engine/macros" }
+open-modular-io                 = { path = "src/lib/io" }
+open-modular-io-audio           = { path = "src/lib/io/audio" }
+open-modular-perf               = { path = "src/lib/perf" }
+open-modular-runtime            = { path = "src/lib/runtime" }
+open-modular-runtime-production = { path = "src/lib/runtime/production" }
+open-modular-sync               = { path = "src/lib/sync" }
+open-modular-utils              = { path = "src/lib/utils" }
+proc-macro2                     = "1"
+quote                           = "1"
+rtaudio-sys                     = "0.3"
+syn                             = "2"
+thread-priority                 = "1"
+tracing                         = { features = ["max_level_trace", "release_max_level_info"], version = "0.1" }
+tracing-subscriber              = { features = ["env-filter"], version = "0.3" }
+uuid                            = { features = ["v4"], version = "1" }
+
+[workspace.lints.clippy]
+cargo       = "warn"
+complexity  = "warn"
+correctness = "deny"
+pedantic    = "warn"
+perf        = "warn"
+restriction = "allow"
+style       = "warn"
+suspicious  = "warn"
+
+[workspace.lints.rust]
+future_incompatible     = "warn"
+nonstandard_style       = "warn"
+rust_2018_compatibility = "warn"
+rust_2018_idioms        = "warn"
+rust_2021_compatibility = "warn"
+unused                  = "warn"
+
+[workspace.package]
+authors    = ["Andrew Cherry (@kolektiv)"]
+categories = ["multimedia", "multimedia::audio", "simulation"]
+edition    = "2024"
+keywords   = ["audio", "dsp", "modular", "synthesis"]
+license    = "AGPL-3.0-only"
+readme     = "README.md"
+repository = "https://github.com/open-modular/open-modular"
+version    = "0.1.0"

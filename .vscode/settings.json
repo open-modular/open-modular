@@ -1,0 +1,9 @@
+{
+	"files.exclude": {
+		".adr-dir": true,
+		".github": true,
+		".gitignore": true,
+		".vscode": true,
+		"flake.lock": true
+	}
+}

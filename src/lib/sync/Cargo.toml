@@ -1,0 +1,18 @@
+[dependencies]
+fancy_constructor.workspace  = true
+open-modular-utils.workspace = true
+
+[lints]
+workspace = true
+
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "Open Modular Synchronization Primitives"
+edition.workspace    = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "open-modular-sync"
+readme.workspace     = true
+repository.workspace = true
+version.workspace    = true
