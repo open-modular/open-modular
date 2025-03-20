@@ -94,19 +94,19 @@ where
 
             let sine_id = Uuid::from_str("f75487a4-7847-43f9-ab47-71bd6acfb78d").unwrap();
             let sine = M::instantiate(&sine_id, self.context.clone());
-            let sine_ref: InstanceRef = self.processor.add(sine);
+            let sine_ref: InstanceRef = self.processor.add(sine_id, sine);
             let sine_out_ref = sine_ref.output_ref(0);
 
             let mult_id = Uuid::from_str("54d93000-7dd2-45ce-a3f1-ad53b0a04fac").unwrap();
             let mult = M::instantiate(&mult_id, self.context.clone());
-            let mult_ref = self.processor.add(mult);
+            let mult_ref = self.processor.add(mult_id, mult);
             let mult_in_ref = mult_ref.input_ref(0);
             let mult_out_l_ref = mult_ref.output_ref(0);
             let mult_out_r_ref = mult_ref.output_ref(1);
 
             let out_id = Uuid::from_str("47d0fca2-cb58-4011-8a55-31ecd4b184c1").unwrap();
             let out = M::instantiate(&out_id, self.context.clone());
-            let out_ref: InstanceRef = self.processor.add(out);
+            let out_ref: InstanceRef = self.processor.add(out_id, out);
             let out_l_ref = out_ref.input_ref(0);
             let out_r_ref = out_ref.input_ref(1);
 

@@ -5,6 +5,7 @@ use std::{
 
 use bon::Builder;
 use open_modular_core::Vector;
+use uuid::Uuid;
 
 use crate::{
     module::ProcessToken,
@@ -44,7 +45,7 @@ pub struct Input {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct InputRef(pub (usize, usize));
+pub struct InputRef(pub (Uuid, usize));
 
 impl InputRef {
     #[must_use]
@@ -78,7 +79,7 @@ pub struct Output {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct OutputRef(pub (usize, usize));
+pub struct OutputRef(pub (Uuid, usize));
 
 impl OutputRef {
     #[must_use]

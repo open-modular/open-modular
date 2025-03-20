@@ -1,4 +1,3 @@
-pub mod collections;
 pub mod dispatch;
 pub mod sync;
 pub mod thread;

@@ -36,12 +36,9 @@ use open_modular_runtime::io::audio::{
     GetAudioOutputs,
 };
 use open_modular_sync::barrier::Barriers;
-use open_modular_utils::{
-    collections::IndexMap,
-    sync::{
-        Pending,
-        Value,
-    },
+use open_modular_utils::sync::{
+    Pending,
+    Value,
 };
 use tracing::{
     debug,
@@ -66,7 +63,7 @@ impl AudioBufferWeak {
 }
 
 #[derive(Clone, Debug, Default)]
-struct AudioBufferWeakMap(pub Arc<SyncUnsafeCell<IndexMap<16, AudioBufferWeak>>>);
+struct AudioBufferWeakMap(pub Arc<SyncUnsafeCell<Vec<AudioBufferWeak>>>);
 
 // -------------------------------------------------------------------------------------------------
 
@@ -235,12 +232,12 @@ impl AudioController {
                             // vectors and add the buffer vector to the output mix (just a basic
                             // summing mix for now, this might be improved upon).
 
-                            buffers.values().for_each(|buffer| {
+                            for buffer in buffers.iter() {
                                 output
                                     .iter_mut()
                                     .zip(unsafe { &*buffer.0.upgrade().unwrap_unchecked().get() })
                                     .for_each(|(output, buffer)| *output += buffer);
-                            });
+                            }
 
                             // for buffer in buffers.values() {
                             //     output
@@ -297,7 +294,7 @@ impl AudioController {
         trace!(?buffer_weak, "adding weak output buffer to output stream");
 
         unsafe {
-            (*output.buffers.0.get()).add(buffer_weak);
+            (*output.buffers.0.get()).push(buffer_weak);
         }
 
         // Return the original buffer. When this buffer is dropped, the local weak

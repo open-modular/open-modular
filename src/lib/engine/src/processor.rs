@@ -3,11 +3,12 @@ use std::{
     fmt::Debug,
 };
 
-use open_modular_utils::collections::IndexMap;
+use indexmap::IndexMap;
 use tracing::{
     instrument,
     trace,
 };
+use uuid::Uuid;
 
 use crate::{
     module::{
@@ -37,7 +38,7 @@ where
     M: Module,
 {
     args: ProcessArgs,
-    instances: IndexMap<C, SyncUnsafeCell<M>>,
+    instances: IndexMap<Uuid, SyncUnsafeCell<M>>,
 }
 
 impl<const C: usize, M> Processor<C, M>
@@ -45,21 +46,18 @@ where
     M: Debug + Module,
 {
     #[instrument(level = "debug", skip(self))]
-    pub fn add(&mut self, module: M) -> InstanceRef {
-        trace!(?module, "adding module");
+    pub fn add(&mut self, key: Uuid, instance: M) -> InstanceRef {
+        trace!(?instance, "adding module");
 
-        let instance = SyncUnsafeCell::new(module);
-        let index = self.instances.add(instance);
+        let instance = SyncUnsafeCell::new(instance);
 
-        InstanceRef(index)
+        self.instances.insert(key, instance);
+
+        InstanceRef(key)
     }
 
-    pub unsafe fn remove(&mut self, instance_ref: &InstanceRef) {
-        unsafe {
-            // TODO: Disconnection, etc.
-
-            self.instances.remove_unchecked(instance_ref.0);
-        }
+    pub fn remove(&mut self, instance_ref: &InstanceRef) {
+        self.instances.swap_remove(&instance_ref.0);
     }
 }
 
@@ -69,10 +67,11 @@ where
 {
     pub unsafe fn connect(&mut self, output_ref: &OutputRef, input_ref: &InputRef) {
         unsafe {
-            (*self.instances.get_unchecked(output_ref.0.0).get())
+            (*self.instances.get(&output_ref.0.0).unwrap_unchecked().get())
                 .output_mut(output_ref.0.1)
                 .connect(
-                    (*self.instances.get_unchecked(input_ref.0.0).get()).input_mut(input_ref.0.1),
+                    (*self.instances.get(&input_ref.0.0).unwrap_unchecked().get())
+                        .input_mut(input_ref.0.1),
                 );
         }
     }
@@ -80,12 +79,14 @@ where
     pub unsafe fn disconnect(&mut self, port_ref: impl Into<PortRef>) {
         unsafe {
             match port_ref.into() {
-                PortRef::Input(input) => (*self.instances.get_unchecked(input.0.0).get())
+                PortRef::Input(input) => (*self.instances.get(&input.0.0).unwrap_unchecked().get())
                     .input_mut(input.0.1)
                     .disconnect(),
-                PortRef::Output(output) => (*self.instances.get_unchecked(output.0.0).get())
-                    .output_mut(output.0.1)
-                    .disconnect(),
+                PortRef::Output(output) => {
+                    (*self.instances.get(&output.0.0).unwrap_unchecked().get())
+                        .output_mut(output.0.1)
+                        .disconnect();
+                }
             }
         }
     }
@@ -121,7 +122,7 @@ where
 // Instance Ref
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct InstanceRef(pub usize);
+pub struct InstanceRef(pub Uuid);
 
 impl InstanceRef {
     #[must_use]

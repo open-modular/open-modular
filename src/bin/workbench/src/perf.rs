@@ -12,6 +12,7 @@ use open_modular_engine::{
 };
 use open_modular_module_gen::Sine;
 use open_modular_module_util::Multiple;
+use uuid::Uuid;
 
 use crate::module::ModulePerf;
 
@@ -26,8 +27,14 @@ pub fn run() {
 
     for _ in 0..50 {
         unsafe {
-            let a_ref = engine.add(ModulePerf::instantiate(&Sine::<()>::id(), ()));
-            let b_ref = engine.add(ModulePerf::instantiate(&Multiple::<()>::id(), ()));
+            let a_ref = engine.add(
+                Uuid::new_v4(),
+                ModulePerf::instantiate(&Sine::<()>::id(), ()),
+            );
+            let b_ref = engine.add(
+                Uuid::new_v4(),
+                ModulePerf::instantiate(&Multiple::<()>::id(), ()),
+            );
 
             engine.connect(&a_ref.output_ref(0), &b_ref.input_ref(0));
         }

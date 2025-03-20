@@ -29,6 +29,7 @@ crossbeam          = "0.8"
 darling            = "0.20"
 derive_more        = { features = ["full"], version = "2" }
 fancy_constructor  = "2"
+indexmap           = "2.8"
 oneshot            = { default-features = false, features = ["std"], version = "0.1" }
 proc-macro2        = "1"
 quote              = "1"
