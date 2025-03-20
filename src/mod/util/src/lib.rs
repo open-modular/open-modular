@@ -60,17 +60,15 @@ impl<R> Instantiate for Multiple<R> {
 
 impl<R> Process for Multiple<R> {
     fn process(&mut self, args: &ProcessArgs) {
-        if self.input(0).expect("port to exist").connected() {
+        if unsafe { self.input_unchecked(0).connected() } {
             (0..4).for_each(|i| {
-                if self.output(i).expect("port to exist").connected() {
-                    *self
-                        .output_mut(i)
-                        .expect("port to exist")
-                        .output_vector_mut(&args.token) = *self
-                        .input(0)
-                        .expect("port to exist")
-                        .input_vector(&args.token)
-                        .expect("vector to exist");
+                if unsafe { self.output_unchecked(i).connected() } {
+                    unsafe {
+                        *self.output_unchecked_mut(i).output_vector_mut(&args.token) = *self
+                            .input_unchecked(0)
+                            .input_vector(&args.token)
+                            .expect("vector to exist");
+                    }
                 }
             });
         }
