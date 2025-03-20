@@ -49,6 +49,8 @@ impl GetConnected for Node {
 
 pub trait GetInput {
     fn input(&self, input: usize) -> Option<&Port<Input>>;
+
+    unsafe fn input_unchecked(&self, input: usize) -> &Port<Input>;
 }
 
 impl<T> GetInput for T
@@ -58,10 +60,16 @@ where
     fn input(&self, input: usize) -> Option<&Port<Input>> {
         self.as_ref().inputs.get(input)
     }
+
+    unsafe fn input_unchecked(&self, input: usize) -> &Port<Input> {
+        unsafe { self.as_ref().inputs.get_unchecked(input) }
+    }
 }
 
 pub(crate) trait GetInputMut {
     fn input_mut(&mut self, input: usize) -> Option<&mut Port<Input>>;
+
+    unsafe fn input_unchecked_mut(&mut self, input: usize) -> &mut Port<Input>;
 }
 
 impl<T> GetInputMut for T
@@ -71,6 +79,10 @@ where
     fn input_mut(&mut self, input: usize) -> Option<&mut Port<Input>> {
         self.as_mut().inputs.get_mut(input)
     }
+
+    unsafe fn input_unchecked_mut(&mut self, input: usize) -> &mut Port<Input> {
+        unsafe { self.as_mut().inputs.get_unchecked_mut(input) }
+    }
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -79,6 +91,8 @@ where
 
 pub trait GetOutput {
     fn output(&self, output: usize) -> Option<&Port<Output>>;
+
+    unsafe fn output_unchecked(&self, output: usize) -> &Port<Output>;
 }
 
 impl<T> GetOutput for T
@@ -88,10 +102,16 @@ where
     fn output(&self, output: usize) -> Option<&Port<Output>> {
         self.as_ref().outputs.get(output)
     }
+
+    unsafe fn output_unchecked(&self, output: usize) -> &Port<Output> {
+        unsafe { self.as_ref().outputs.get_unchecked(output) }
+    }
 }
 
 pub trait GetOutputMut {
     fn output_mut(&mut self, output: usize) -> Option<&mut Port<Output>>;
+
+    unsafe fn output_unchecked_mut(&mut self, output: usize) -> &mut Port<Output>;
 }
 
 impl<T> GetOutputMut for T
@@ -100,5 +120,9 @@ where
 {
     fn output_mut(&mut self, output: usize) -> Option<&mut Port<Output>> {
         self.as_mut().outputs.get_mut(output)
+    }
+
+    unsafe fn output_unchecked_mut(&mut self, output: usize) -> &mut Port<Output> {
+        unsafe { self.as_mut().outputs.get_unchecked_mut(output) }
     }
 }

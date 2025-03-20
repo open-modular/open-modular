@@ -27,8 +27,8 @@ use open_modular_engine::{
         module,
     },
     node::{
-        GetOutput as _,
-        GetOutputMut as _,
+        GetOutput,
+        GetOutputMut,
         Node,
     },
     port::{
@@ -104,7 +104,7 @@ where
     R: Debug,
 {
     fn process(&mut self, args: &ProcessArgs) {
-        if self.output(0).expect("port to exist").connected() {
+        if unsafe { self.output_unchecked(0).connected() } {
             self.time += self.increment;
 
             self.output = self.time;
@@ -112,10 +112,9 @@ where
             self.output = unsafe { simd::simd_fsin(self.output) };
             self.output *= self.scale;
 
-            *self
-                .output_mut(0)
-                .expect("port to exist")
-                .output_vector_mut(&args.token) = self.output;
+            unsafe {
+                *self.output_unchecked_mut(0).output_vector_mut(&args.token) = self.output;
+            }
         }
     }
 }
