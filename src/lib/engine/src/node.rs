@@ -48,28 +48,28 @@ impl GetConnected for Node {
 // Input
 
 pub trait GetInput {
-    fn input(&self, input: usize) -> &Port<Input>;
+    fn input(&self, input: usize) -> Option<&Port<Input>>;
 }
 
 impl<T> GetInput for T
 where
     T: AsRef<Node>,
 {
-    fn input(&self, input: usize) -> &Port<Input> {
-        &self.as_ref().inputs[input]
+    fn input(&self, input: usize) -> Option<&Port<Input>> {
+        self.as_ref().inputs.get(input)
     }
 }
 
 pub(crate) trait GetInputMut {
-    fn input_mut(&mut self, input: usize) -> &mut Port<Input>;
+    fn input_mut(&mut self, input: usize) -> Option<&mut Port<Input>>;
 }
 
 impl<T> GetInputMut for T
 where
     T: AsMut<Node>,
 {
-    fn input_mut(&mut self, input: usize) -> &mut Port<Input> {
-        &mut self.as_mut().inputs[input]
+    fn input_mut(&mut self, input: usize) -> Option<&mut Port<Input>> {
+        self.as_mut().inputs.get_mut(input)
     }
 }
 
@@ -78,27 +78,27 @@ where
 // Output
 
 pub trait GetOutput {
-    fn output(&self, output: usize) -> &Port<Output>;
+    fn output(&self, output: usize) -> Option<&Port<Output>>;
 }
 
 impl<T> GetOutput for T
 where
     T: AsRef<Node>,
 {
-    fn output(&self, output: usize) -> &Port<Output> {
-        &self.as_ref().outputs[output]
+    fn output(&self, output: usize) -> Option<&Port<Output>> {
+        self.as_ref().outputs.get(output)
     }
 }
 
 pub trait GetOutputMut {
-    fn output_mut(&mut self, output: usize) -> &mut Port<Output>;
+    fn output_mut(&mut self, output: usize) -> Option<&mut Port<Output>>;
 }
 
 impl<T> GetOutputMut for T
 where
     T: AsMut<Node>,
 {
-    fn output_mut(&mut self, output: usize) -> &mut Port<Output> {
-        &mut self.as_mut().outputs[output]
+    fn output_mut(&mut self, output: usize) -> Option<&mut Port<Output>> {
+        self.as_mut().outputs.get_mut(output)
     }
 }

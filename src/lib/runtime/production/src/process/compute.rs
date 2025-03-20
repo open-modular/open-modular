@@ -110,11 +110,9 @@ where
             let out_l_ref = out_ref.input_ref(0);
             let out_r_ref = out_ref.input_ref(1);
 
-            unsafe {
-                self.processor.connect(&sine_out_ref, &mult_in_ref);
-                self.processor.connect(&mult_out_l_ref, &out_l_ref);
-                self.processor.connect(&mult_out_r_ref, &out_r_ref);
-            }
+            self.processor.connect(&sine_out_ref, &mult_in_ref);
+            self.processor.connect(&mult_out_l_ref, &out_l_ref);
+            self.processor.connect(&mult_out_r_ref, &out_r_ref);
         });
 
         if self.exit.triggered() {
@@ -131,10 +129,7 @@ where
         #[cfg(feature = "perf")]
         self.timing_collector.enter();
 
-        unsafe {
-            self.processor.process(self.iteration);
-        }
-
+        self.processor.process(self.iteration);
         self.iteration += 1;
 
         #[cfg(feature = "perf")]

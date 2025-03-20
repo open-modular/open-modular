@@ -97,7 +97,7 @@ where
                     .iter_mut()
                     .enumerate()
                     .for_each(|(i, output_vector)| {
-                        let input = self.input(i);
+                        let input = self.input(i).expect("port to exist");
 
                         if input.connected() {
                             if let Some(input_vector) = input.input_vector(&args.token) {

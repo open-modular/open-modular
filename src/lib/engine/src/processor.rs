@@ -65,28 +65,57 @@ impl<const C: usize, M> Processor<C, M>
 where
     M: Module,
 {
-    pub unsafe fn connect(&mut self, output_ref: &OutputRef, input_ref: &InputRef) {
-        unsafe {
-            (*self.instances.get(&output_ref.0.0).unwrap_unchecked().get())
-                .output_mut(output_ref.0.1)
-                .connect(
-                    (*self.instances.get(&input_ref.0.0).unwrap_unchecked().get())
-                        .input_mut(input_ref.0.1),
-                );
-        }
+    pub fn connect(&mut self, output_ref: &OutputRef, input_ref: &InputRef) {
+        let output = unsafe {
+            (*self
+                .instances
+                .get(&output_ref.0.0)
+                .expect("output instance to exist")
+                .get())
+            .output_mut(output_ref.0.1)
+            .expect("output port to exist")
+        };
+
+        let input = unsafe {
+            (*self
+                .instances
+                .get(&input_ref.0.0)
+                .expect("output instance to exist")
+                .get())
+            .input_mut(input_ref.0.1)
+            .expect("input port to exist")
+        };
+
+        output.connect(input);
     }
 
-    pub unsafe fn disconnect(&mut self, port_ref: impl Into<PortRef>) {
-        unsafe {
-            match port_ref.into() {
-                PortRef::Input(input) => (*self.instances.get(&input.0.0).unwrap_unchecked().get())
-                    .input_mut(input.0.1)
-                    .disconnect(),
-                PortRef::Output(output) => {
-                    (*self.instances.get(&output.0.0).unwrap_unchecked().get())
-                        .output_mut(output.0.1)
-                        .disconnect();
-                }
+    pub fn disconnect(&mut self, port_ref: impl Into<PortRef>) {
+        match port_ref.into() {
+            PortRef::Input(input_ref) => {
+                let input = unsafe {
+                    (*self
+                        .instances
+                        .get(&input_ref.0.0)
+                        .expect("output instance to exist")
+                        .get())
+                    .input_mut(input_ref.0.1)
+                    .expect("input port to exist")
+                };
+
+                input.disconnect();
+            }
+            PortRef::Output(output_ref) => {
+                let output = unsafe {
+                    (*self
+                        .instances
+                        .get(&output_ref.0.0)
+                        .expect("output instance to exist")
+                        .get())
+                    .output_mut(output_ref.0.1)
+                    .expect("output port to exist")
+                };
+
+                output.disconnect();
             }
         }
     }
@@ -96,9 +125,8 @@ impl<const C: usize, M> Processor<C, M>
 where
     M: Module,
 {
-    pub unsafe fn process(&mut self, iteration: u64) {
+    pub fn process(&mut self, iteration: u64) {
         self.args.token.0 = (iteration % 2) as usize;
-
         self.instances.values().for_each(|module| unsafe {
             (*module.get()).process(&self.args);
         });

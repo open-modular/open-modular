@@ -139,8 +139,6 @@ impl GetConnected for Output {
 
 pub trait GetInputVector {
     fn input_vector(&self, token: &ProcessToken) -> Option<&Vector>;
-
-    unsafe fn input_vector_unchecked(&self, token: &ProcessToken) -> &Vector;
 }
 
 impl<P> GetInputVector for Port<P>
@@ -150,33 +148,18 @@ where
     fn input_vector(&self, token: &ProcessToken) -> Option<&Vector> {
         unsafe { (*self.0.get()).input_vector(token) }
     }
-
-    unsafe fn input_vector_unchecked(&self, token: &ProcessToken) -> &Vector {
-        unsafe { (*self.0.get()).input_vector_unchecked(token) }
-    }
 }
 
 impl GetInputVector for Input {
     fn input_vector(&self, token: &ProcessToken) -> Option<&Vector> {
-        self.output.as_ref().map(|output| unsafe {
-            (*output.get())
-                .vectors
-                .get_unchecked(usize::from(token.0 == 0))
-        })
-    }
-
-    unsafe fn input_vector_unchecked(&self, token: &ProcessToken) -> &Vector {
-        unsafe {
-            (*self.output.as_ref().unwrap_unchecked().get())
-                .vectors
-                .get_unchecked(usize::from(token.0 == 0))
-        }
+        self.output
+            .as_ref()
+            .map(|output| unsafe { (*output.get()).output_vector(token) })
     }
 }
 
 pub trait GetOutputVector {
     fn output_vector(&self, token: &ProcessToken) -> &Vector;
-    fn output_vector_previous(&self, token: &ProcessToken) -> &Vector;
 }
 
 impl<P> GetOutputVector for Port<P>
@@ -186,17 +169,28 @@ where
     fn output_vector(&self, token: &ProcessToken) -> &Vector {
         unsafe { (*self.0.get()).output_vector(token) }
     }
-
-    fn output_vector_previous(&self, token: &ProcessToken) -> &Vector {
-        unsafe { (*self.0.get()).output_vector_previous(token) }
-    }
 }
 
 impl GetOutputVector for Output {
     fn output_vector(&self, token: &ProcessToken) -> &Vector {
         unsafe { self.vectors.get_unchecked(token.0) }
     }
+}
 
+pub trait GetOutputVectorPrevious {
+    fn output_vector_previous(&self, token: &ProcessToken) -> &Vector;
+}
+
+impl<P> GetOutputVectorPrevious for Port<P>
+where
+    P: GetOutputVectorPrevious,
+{
+    fn output_vector_previous(&self, token: &ProcessToken) -> &Vector {
+        unsafe { (*self.0.get()).output_vector_previous(token) }
+    }
+}
+
+impl GetOutputVectorPrevious for Output {
     fn output_vector_previous(&self, token: &ProcessToken) -> &Vector {
         unsafe { self.vectors.get_unchecked(usize::from(token.0 == 0)) }
     }
@@ -225,23 +219,29 @@ impl GetOutputVectorMut for Output {
 
 // Connection
 
-pub(crate) unsafe trait Connect<P> {
-    unsafe fn connect(&mut self, other: &mut P);
+pub(crate) trait Connect<P> {
+    fn connect(&mut self, other: &mut P);
 }
 
-unsafe impl Connect<Port<Output>> for Port<Input> {
-    unsafe fn connect(&mut self, output: &mut Port<Output>) {
+impl Connect<Port<Output>> for Port<Input> {
+    fn connect(&mut self, output: &mut Port<Output>) {
         unsafe {
             (*self.0.get()).output = Some(output.0.clone());
+        }
+
+        unsafe {
             (*output.0.get()).input = Some(self.0.clone());
         }
     }
 }
 
-unsafe impl Connect<Port<Input>> for Port<Output> {
-    unsafe fn connect(&mut self, input: &mut Port<Input>) {
+impl Connect<Port<Input>> for Port<Output> {
+    fn connect(&mut self, input: &mut Port<Input>) {
         unsafe {
             (*self.0.get()).input = Some(input.0.clone());
+        }
+
+        unsafe {
             (*input.0.get()).output = Some(self.0.clone());
         }
     }
@@ -252,35 +252,39 @@ unsafe impl Connect<Port<Input>> for Port<Output> {
 // Disconnection
 
 #[allow(dead_code)]
-pub(crate) unsafe trait Disconnect {
-    unsafe fn disconnect(&mut self);
+pub(crate) trait Disconnect {
+    fn disconnect(&mut self);
 }
 
-unsafe impl<P> Disconnect for Port<P>
+impl<P> Disconnect for Port<P>
 where
     P: Disconnect,
 {
-    unsafe fn disconnect(&mut self) {
+    fn disconnect(&mut self) {
         unsafe {
             (*self.0.get()).disconnect();
         }
     }
 }
 
-unsafe impl Disconnect for Input {
-    unsafe fn disconnect(&mut self) {
-        unsafe {
-            (*self.output.as_ref().unwrap_unchecked().get()).input = None;
+impl Disconnect for Input {
+    fn disconnect(&mut self) {
+        if let Some(output) = self.output.as_ref() {
+            unsafe {
+                (*output.get()).input = None;
+            }
         }
 
         self.output = None;
     }
 }
 
-unsafe impl Disconnect for Output {
-    unsafe fn disconnect(&mut self) {
-        unsafe {
-            (*self.input.as_ref().unwrap_unchecked().get()).output = None;
+impl Disconnect for Output {
+    fn disconnect(&mut self) {
+        if let Some(input) = self.input.as_ref() {
+            unsafe {
+                (*input.get()).output = None;
+            }
         }
 
         self.input = None;
