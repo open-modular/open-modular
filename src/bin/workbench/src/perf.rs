@@ -5,7 +5,7 @@ use std::time::{
 
 use open_modular_engine::{
     module::{
-        Identify as _,
+        ModuleIdentify as _,
         ModuleSource,
     },
     processor::Processor,
@@ -26,14 +26,8 @@ pub fn run() {
     let mut engine = Processor::<ModulePerf<()>>::default();
 
     for _ in 0..50 {
-        let a_ref = engine.add(
-            Uuid::new_v4(),
-            ModulePerf::instantiate(&Sine::<()>::id(), ()),
-        );
-        let b_ref = engine.add(
-            Uuid::new_v4(),
-            ModulePerf::instantiate(&Multiple::<()>::id(), ()),
-        );
+        let a_ref = engine.add(Uuid::new_v4(), ModulePerf::get(&Sine::<()>::id(), ()));
+        let b_ref = engine.add(Uuid::new_v4(), ModulePerf::get(&Multiple::<()>::id(), ()));
 
         engine.connect(&a_ref.output_ref(0), &b_ref.input_ref(0));
     }

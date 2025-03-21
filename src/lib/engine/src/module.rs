@@ -2,15 +2,18 @@ use bon::Builder;
 use fancy_constructor::new;
 use uuid::Uuid;
 
-use crate::port::{
-    PortInputDefinition,
-    PortInputDefinitionBuilder,
-    PortInputReference,
-    PortInputs,
-    PortOutputDefinition,
-    PortOutputDefinitionBuilder,
-    PortOutputReference,
-    PortOutputs,
+use crate::{
+    port::{
+        PortInputDefinition,
+        PortInputDefinitionBuilder,
+        PortInputReference,
+        PortInputs,
+        PortOutputDefinition,
+        PortOutputDefinitionBuilder,
+        PortOutputReference,
+        PortOutputs,
+    },
+    processor::Process,
 };
 
 // =================================================================================================
@@ -27,38 +30,9 @@ pub trait Module:
 
 // -------------------------------------------------------------------------------------------------
 
-pub trait ModuleSource {
-    type Context;
+// Define
 
-    fn instantiate(id: &Uuid, context: Self::Context) -> Self;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-// Instance Ref
-
-#[derive(new, Clone, Debug, Eq, PartialEq)]
-pub struct ModuleInstanceReference {
-    pub instance: Uuid,
-}
-
-impl ModuleInstanceReference {
-    #[must_use]
-    pub fn input_ref(&self, input: usize) -> PortInputReference {
-        PortInputReference::new(self.instance, input)
-    }
-
-    #[must_use]
-    pub fn output_ref(&self, output: usize) -> PortOutputReference {
-        PortOutputReference::new(self.instance, output)
-    }
-}
-
-// -------------------------------------------------------------------------------------------------
-
-// Definition
-
-pub trait Define {
+pub trait ModuleDefine {
     fn define(module: ModuleDefinitionBuilder) -> impl Into<ModuleDefinition>;
 }
 
@@ -114,17 +88,38 @@ where
 
 // -------------------------------------------------------------------------------------------------
 
-// Identification
+// Identify
 
-pub trait Identify {
+pub trait ModuleIdentify {
     fn id() -> Uuid;
 }
 
 // -------------------------------------------------------------------------------------------------
 
-// Instantiation
+// Instance Reference
 
-pub trait Instantiate {
+#[derive(new, Clone, Debug, Eq, PartialEq)]
+pub struct ModuleInstanceReference {
+    pub instance: Uuid,
+}
+
+impl ModuleInstanceReference {
+    #[must_use]
+    pub fn input_ref(&self, input: usize) -> PortInputReference {
+        PortInputReference::new(self.instance, input)
+    }
+
+    #[must_use]
+    pub fn output_ref(&self, output: usize) -> PortOutputReference {
+        PortOutputReference::new(self.instance, output)
+    }
+}
+
+// -------------------------------------------------------------------------------------------------
+
+// Instantiate
+
+pub trait ModuleInstantiate {
     type Context;
 
     fn instantiate(
@@ -136,19 +131,13 @@ pub trait Instantiate {
 
 // -------------------------------------------------------------------------------------------------
 
-// Processing
+// Source
 
-pub trait Process {
-    fn process(&mut self, args: &ProcessArgs);
+pub trait ModuleSource {
+    type Context;
+
+    fn get(id: &Uuid, context: Self::Context) -> Self;
 }
-
-#[derive(Debug, Default)]
-pub struct ProcessArgs {
-    pub token: ProcessToken,
-}
-
-#[derive(Debug, Default)]
-pub struct ProcessToken(pub(crate) usize);
 
 // -------------------------------------------------------------------------------------------------
 

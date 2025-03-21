@@ -14,12 +14,13 @@ use crate::{
     module::{
         Module,
         ModuleInstanceReference,
-        ProcessArgs,
     },
     port::{
-        Connect as _,
-        Disconnect as _,
+        PortConnect as _,
+        PortDisconnect as _,
+        PortInputGet as _,
         PortInputReference,
+        PortOutputGet as _,
         PortOutputReference,
         PortReference,
     },
@@ -68,26 +69,18 @@ where
             .get(&output_ref.instance)
             .expect("instance to exist");
 
-        let outputs = unsafe { (*output_instance.get()).as_mut() };
-
-        let output = outputs
-            .outputs
-            .get(output_ref.port)
-            .expect("output to exist");
+        let output_ports = unsafe { (*output_instance.get()).as_mut() };
+        let output_port = output_ports.port(output_ref.port).expect("port to exist");
 
         let input_instance = self
             .instances
             .get(&input_ref.instance)
             .expect("instance to exist");
 
-        let inputs = unsafe { (*input_instance.get()).as_ref() };
+        let input_ports = unsafe { (*input_instance.get()).as_ref() };
+        let input_port = input_ports.port(input_ref.port).expect("port to exist");
 
-        let input = inputs
-            .inputs
-            .get(input_ref.port)
-            .expect("input port to exist");
-
-        output.connect(input);
+        output_port.connect(input_port);
     }
 
     pub fn disconnect(&mut self, port_ref: impl Into<PortReference>) {
@@ -145,3 +138,19 @@ where
         }
     }
 }
+
+// -------------------------------------------------------------------------------------------------
+
+// Process
+
+pub trait Process {
+    fn process(&mut self, args: &ProcessArgs);
+}
+
+#[derive(Debug, Default)]
+pub struct ProcessArgs {
+    pub token: ProcessToken,
+}
+
+#[derive(Debug, Default)]
+pub struct ProcessToken(pub(crate) usize);

@@ -3,20 +3,22 @@ use std::marker::PhantomData;
 use fancy_constructor::new;
 use open_modular_engine::{
     module::{
-        Define,
-        Instantiate,
+        ModuleDefine,
         ModuleDefinition,
         ModuleDefinitionBuilder,
-        Process,
-        ProcessArgs,
+        ModuleInstantiate,
         module,
     },
     port::{
-        GetPortInputVector as _,
-        GetPortOutputVector as _,
         Port,
+        PortInputVectorGet as _,
         PortInputs,
+        PortOutputVectorGet as _,
         PortOutputs,
+    },
+    processor::{
+        Process,
+        ProcessArgs,
     },
 };
 
@@ -34,7 +36,7 @@ pub struct Multiple<R> {
     _r: PhantomData<R>,
 }
 
-impl<R> Define for Multiple<R> {
+impl<R> ModuleDefine for Multiple<R> {
     fn define(module: ModuleDefinitionBuilder) -> impl Into<ModuleDefinition> {
         module
             .name("util/mult")
@@ -47,7 +49,7 @@ impl<R> Define for Multiple<R> {
     }
 }
 
-impl<R> Instantiate for Multiple<R> {
+impl<R> ModuleInstantiate for Multiple<R> {
     type Context = R;
 
     fn instantiate(
@@ -61,9 +63,6 @@ impl<R> Instantiate for Multiple<R> {
 
 impl<R> Process for Multiple<R> {
     fn process(&mut self, args: &ProcessArgs) {
-        // let inputs = self.inputs();
-        // let mut outputs = self.outputs();
-
         if let Some(Port::Connected(input)) = self.port_inputs.vector(0, &args.token) {
             for i in 0..4 {
                 if let Some(Port::Connected(output)) = self.port_outputs.vector(i, &args.token) {

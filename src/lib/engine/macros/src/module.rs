@@ -87,7 +87,7 @@ pub(crate) fn module_tokens(args: &Args, item: &ItemStruct) -> TokenStream2 {
 
             // Identify
 
-            impl #generics ::open_modular_engine::module::Identify for #ident #generics #where_clause {
+            impl #generics ::open_modular_engine::module::ModuleIdentify for #ident #generics #where_clause {
                 fn id() -> ::open_modular_engine::_dependencies::uuid::Uuid {
                     Self::id().clone()
                 }

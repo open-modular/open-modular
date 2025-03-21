@@ -6,19 +6,21 @@ use open_modular_core::MAX_CHANNELS_U32;
 use open_modular_engine::{
     self,
     module::{
-        Define,
-        Instantiate,
+        ModuleDefine,
         ModuleDefinition,
         ModuleDefinitionBuilder,
-        Process,
-        ProcessArgs,
+        ModuleInstantiate,
         module,
     },
     port::{
-        GetPortInputVector,
         Port,
+        PortInputVectorGet,
         PortInputs,
         PortOutputs,
+    },
+    processor::{
+        Process,
+        ProcessArgs,
     },
 };
 use open_modular_runtime::io::audio::{
@@ -52,7 +54,7 @@ where
     state: OutputState,
 }
 
-impl<R> Define for Output<R>
+impl<R> ModuleDefine for Output<R>
 where
     R: Debug + GetAudio,
 {
@@ -66,7 +68,7 @@ where
     }
 }
 
-impl<R> Instantiate for Output<R>
+impl<R> ModuleInstantiate for Output<R>
 where
     R: Debug + GetAudio,
 {

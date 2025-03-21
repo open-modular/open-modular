@@ -123,7 +123,7 @@ pub(crate) fn module_enum_tokens(args: &Args, item: &ItemEnum) -> TokenStream2 {
 
             // Identify
 
-            impl #generics ::open_modular_engine::module::Identify for #ident #generics #where_clause {
+            impl #generics ::open_modular_engine::module::ModuleIdentify for #ident #generics #where_clause {
                 fn id() -> ::open_modular_engine::_dependencies::uuid::Uuid {
                     Self::id().clone()
                 }
@@ -138,7 +138,7 @@ pub(crate) fn module_enum_tokens(args: &Args, item: &ItemEnum) -> TokenStream2 {
             impl #generics::open_modular_engine::module::ModuleSource for #ident #generics #where_clause {
                 type Context = R;
 
-                fn instantiate(
+                fn get(
                     id: &::open_modular_engine::_dependencies::uuid::Uuid,
                     context: Self::Context
                 ) -> Self {
@@ -156,8 +156,8 @@ pub(crate) fn module_enum_tokens(args: &Args, item: &ItemEnum) -> TokenStream2 {
 
             // Process
 
-            impl #generics ::open_modular_engine::module::Process for #ident #generics #where_clause {
-                fn process(&mut self, args: &::open_modular_engine::module::ProcessArgs) {
+            impl #generics ::open_modular_engine::processor::Process for #ident #generics #where_clause {
+                fn process(&mut self, args: &::open_modular_engine::processor::ProcessArgs) {
                     match self {
                         #(Self::#variant(module) => module.process(args)),*
                     }
@@ -181,8 +181,8 @@ pub(crate) fn module_enum_tokens(args: &Args, item: &ItemEnum) -> TokenStream2 {
 
                     #(
                         definitions.insert(
-                            <#variant::#generics as ::open_modular_engine::module::Identify>::id(),
-                            <#variant::#generics as ::open_modular_engine::module::Define>::define(
+                            <#variant::#generics as ::open_modular_engine::module::ModuleIdentify>::id(),
+                            <#variant::#generics as ::open_modular_engine::module::ModuleDefine>::define(
                                 ::open_modular_engine::module::ModuleDefinition::builder()
                             ).into(),
                         );
@@ -210,10 +210,10 @@ pub(crate) fn module_enum_tokens(args: &Args, item: &ItemEnum) -> TokenStream2 {
 
                     #(
                         instantiations.insert(
-                            <#variant::#generics as ::open_modular_engine::module::Identify>::id(),
+                            <#variant::#generics as ::open_modular_engine::module::ModuleIdentify>::id(),
                             Box::new(|context, port_inputs, port_outputs| {
                                 #ident::#variant(
-                                    <#variant::#generics as ::open_modular_engine::module::Instantiate>::instantiate(
+                                    <#variant::#generics as ::open_modular_engine::module::ModuleInstantiate>::instantiate(
                                         context,
                                         port_inputs,
                                         port_outputs,

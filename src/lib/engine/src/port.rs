@@ -8,16 +8,24 @@ use fancy_constructor::new;
 use open_modular_core::Vector;
 use uuid::Uuid;
 
-use crate::module::{
-    ModuleDefinition,
-    ModuleInstanceReference,
-    ProcessToken,
+use crate::{
+    module::{
+        ModuleDefinition,
+        ModuleInstanceReference,
+    },
+    processor::ProcessToken,
 };
 
 // =================================================================================================
 // Port
 // =================================================================================================
 
+/// Port is a generic return type, used to distinguish cases where something
+/// which may be connected or disconnected holds different data depending on
+/// state (in this case, no data is held when disconnected).
+///
+/// This type may be aliased as an internal value type or used as a direct
+/// return type.
 #[derive(new, Debug)]
 pub enum Port<T> {
     #[new]
@@ -31,76 +39,50 @@ impl<T> Default for Port<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum PortReference {
-    Input(PortInputReference),
-    Output(PortOutputReference),
+// -------------------------------------------------------------------------------------------------
+
+// Connect
+
+pub(crate) trait PortConnect<P> {
+    fn connect(&self, other: &P);
 }
 
-impl From<PortInputReference> for PortReference {
-    fn from(input_ref: PortInputReference) -> Self {
-        Self::Input(input_ref)
+impl PortConnect<Arc<SyncUnsafeCell<PortInput>>> for Arc<SyncUnsafeCell<PortOutput>> {
+    fn connect(&self, input: &Arc<SyncUnsafeCell<PortInput>>) {
+        unsafe {
+            (*self.get()) = PortOutput::new(Box::new([Vector::default(); 2]));
+            (*input.get()) = PortInput::new(self.clone());
+        }
     }
 }
 
-impl From<PortOutputReference> for PortReference {
-    fn from(output_ref: PortOutputReference) -> Self {
-        Self::Output(output_ref)
-    }
+// -------------------------------------------------------------------------------------------------
+
+// Disconnect
+
+pub(crate) trait PortDisconnect {
+    fn disconnect(&mut self);
 }
 
 // -------------------------------------------------------------------------------------------------
 
 // Input
 
-#[derive(new, Debug)]
-pub enum PortInput {
-    #[new]
-    Connected {
-        output: Arc<SyncUnsafeCell<PortOutput>>,
-    },
-    Disconnected,
+pub(crate) type PortInput = Port<Arc<SyncUnsafeCell<PortOutput>>>;
+
+pub(crate) trait PortInputGet {
+    fn port(&self, port: usize) -> Option<&Arc<SyncUnsafeCell<PortInput>>>;
 }
 
-impl Default for PortInput {
-    fn default() -> Self {
-        Self::Disconnected
+impl PortInputGet for PortInputs {
+    fn port(&self, port: usize) -> Option<&Arc<SyncUnsafeCell<PortInput>>> {
+        self.inputs.get(port)
     }
 }
 
-pub trait GetPortInputVector {
-    fn vector(&self, port: usize, token: &ProcessToken) -> Option<Port<&Vector>>;
-}
+// -------------------------------------------------------------------------------------------------
 
-#[derive(new, Debug)]
-pub struct PortInputs {
-    pub(crate) inputs: Vec<Arc<SyncUnsafeCell<PortInput>>>,
-}
-
-impl PortInputs {
-    #[must_use]
-    pub fn from_definition(definition: &ModuleDefinition) -> Self {
-        let input = definition.inputs.iter().map(|_| Arc::default()).collect();
-
-        Self::new(input)
-    }
-}
-
-impl GetPortInputVector for PortInputs {
-    fn vector(&self, port: usize, token: &ProcessToken) -> Option<Port<&Vector>> {
-        self.inputs
-            .get(port)
-            .map(|input| match unsafe { &(*input.get()) } {
-                PortInput::Connected { output } => match unsafe { &(*output.get()) } {
-                    PortOutput::Connected { vectors, .. } => {
-                        Port::new(unsafe { vectors.get_unchecked(token.0) })
-                    }
-                    PortOutput::Disconnected => Port::Disconnected,
-                },
-                PortInput::Disconnected => Port::Disconnected,
-            })
-    }
-}
+// Input Definition
 
 #[derive(Builder, Debug)]
 #[builder(derive(Debug), on(String, into))]
@@ -118,6 +100,10 @@ where
     }
 }
 
+// -------------------------------------------------------------------------------------------------
+
+// Input Reference
+
 #[derive(new, Clone, Debug, Eq, PartialEq)]
 pub struct PortInputReference {
     pub instance: Uuid,
@@ -133,84 +119,65 @@ impl PortInputReference {
 
 // -------------------------------------------------------------------------------------------------
 
-// Output
+// Input Vector
 
-#[derive(new, Debug)]
-pub enum PortOutput {
-    #[new]
-    Connected {
-        input: Arc<SyncUnsafeCell<PortInput>>,
-        vectors: Box<[Vector; 2]>,
-    },
-    Disconnected,
+pub trait PortInputVectorGet {
+    fn vector(&self, port: usize, token: &ProcessToken) -> Option<Port<&Vector>>;
 }
 
-impl Default for PortOutput {
-    fn default() -> Self {
-        Self::Disconnected
+impl PortInputVectorGet for PortInputs {
+    fn vector(&self, port: usize, token: &ProcessToken) -> Option<Port<&Vector>> {
+        self.inputs
+            .get(port)
+            .map(|input| match unsafe { &(*input.get()) } {
+                PortInput::Connected(output) => match unsafe { &(*output.get()) } {
+                    PortOutput::Connected(vectors) => {
+                        Port::new(unsafe { vectors.get_unchecked(usize::from(token.0 == 0)) })
+                    }
+                    PortOutput::Disconnected => Port::Disconnected,
+                },
+                PortInput::Disconnected => Port::Disconnected,
+            })
     }
 }
 
-pub trait GetPortOutputVector {
-    fn vector(&mut self, port: usize, token: &ProcessToken) -> Option<Port<&mut Vector>>;
+// -------------------------------------------------------------------------------------------------
 
-    fn vectors(
-        &mut self,
-        port: usize,
-        token: &ProcessToken,
-    ) -> Option<Port<(&mut Vector, &Vector)>>;
-}
+// Inputs
 
 #[derive(new, Debug)]
-pub struct PortOutputs {
-    pub(crate) outputs: Vec<Arc<SyncUnsafeCell<PortOutput>>>,
+pub struct PortInputs {
+    inputs: Vec<Arc<SyncUnsafeCell<PortInput>>>,
 }
 
-impl PortOutputs {
+impl PortInputs {
     #[must_use]
     pub fn from_definition(definition: &ModuleDefinition) -> Self {
-        let output = definition.outputs.iter().map(|_| Arc::default()).collect();
+        let input = definition.inputs.iter().map(|_| Arc::default()).collect();
 
-        Self::new(output)
+        Self::new(input)
     }
 }
 
-impl GetPortOutputVector for PortOutputs {
-    fn vector(&mut self, port: usize, token: &ProcessToken) -> Option<Port<&mut Vector>> {
-        self.outputs
-            .get(port)
-            .map(|output| match unsafe { &mut (*output.get()) } {
-                PortOutput::Connected { vectors, .. } => {
-                    let current = unsafe { vectors.get_unchecked_mut(token.0) };
+// -------------------------------------------------------------------------------------------------
 
-                    Port::new(current)
-                }
-                PortOutput::Disconnected => Port::Disconnected,
-            })
-    }
+// Output
 
-    fn vectors(
-        &mut self,
-        port: usize,
-        token: &ProcessToken,
-    ) -> Option<Port<(&mut Vector, &Vector)>> {
-        self.outputs
-            .get(port)
-            .map(|output| match unsafe { &mut (*output.get()) } {
-                PortOutput::Connected { vectors, .. } => {
-                    let [current, previous] = unsafe {
-                        vectors.get_disjoint_unchecked_mut([token.0, usize::from(token.0 == 0)])
-                    };
+pub(crate) type PortOutput = Port<Box<[Vector; 2]>>;
 
-                    let current: &mut Vector = current;
-                    let previous: &Vector = previous;
+pub(crate) trait PortOutputGet {
+    fn port(&self, port: usize) -> Option<&Arc<SyncUnsafeCell<PortOutput>>>;
+}
 
-                    Port::new((current, previous))
-                }
-                PortOutput::Disconnected => Port::Disconnected,
-            })
+impl PortOutputGet for PortOutputs {
+    fn port(&self, port: usize) -> Option<&Arc<SyncUnsafeCell<PortOutput>>> {
+        self.outputs.get(port)
     }
 }
+
+// -------------------------------------------------------------------------------------------------
+
+// Output Definition
 
 #[derive(Builder, Debug)]
 #[builder(derive(Debug), on(String, into))]
@@ -228,6 +195,10 @@ where
     }
 }
 
+// -------------------------------------------------------------------------------------------------
+
+// Output Reference
+
 #[derive(new, Clone, Debug, Eq, PartialEq)]
 pub struct PortOutputReference {
     pub instance: Uuid,
@@ -243,61 +214,91 @@ impl PortOutputReference {
 
 // -------------------------------------------------------------------------------------------------
 
-// Connection
+// Output Vector
 
-pub(crate) trait Connect<P> {
-    fn connect(&self, other: &P);
+pub trait PortOutputVectorGet {
+    fn vector(&mut self, port: usize, token: &ProcessToken) -> Option<Port<&mut Vector>>;
+
+    fn vectors(
+        &mut self,
+        port: usize,
+        token: &ProcessToken,
+    ) -> Option<Port<(&mut Vector, &Vector)>>;
 }
 
-impl Connect<Arc<SyncUnsafeCell<PortInput>>> for Arc<SyncUnsafeCell<PortOutput>> {
-    fn connect(&self, input: &Arc<SyncUnsafeCell<PortInput>>) {
-        unsafe {
-            (*self.get()) = PortOutput::new(input.clone(), Box::new([Vector::default(); 2]));
-            (*input.get()) = PortInput::new(self.clone());
-        }
+impl PortOutputVectorGet for PortOutputs {
+    fn vector(&mut self, port: usize, token: &ProcessToken) -> Option<Port<&mut Vector>> {
+        self.outputs
+            .get(port)
+            .map(|output| match unsafe { &mut (*output.get()) } {
+                PortOutput::Connected(vectors) => {
+                    let current = unsafe { vectors.get_unchecked_mut(token.0) };
+
+                    Port::new(current)
+                }
+                PortOutput::Disconnected => Port::Disconnected,
+            })
+    }
+
+    fn vectors(
+        &mut self,
+        port: usize,
+        token: &ProcessToken,
+    ) -> Option<Port<(&mut Vector, &Vector)>> {
+        self.outputs
+            .get(port)
+            .map(|output| match unsafe { &mut (*output.get()) } {
+                PortOutput::Connected(vectors) => {
+                    let [current, previous] = unsafe {
+                        vectors.get_disjoint_unchecked_mut([token.0, usize::from(token.0 == 0)])
+                    };
+
+                    let current: &mut Vector = current;
+                    let previous: &Vector = previous;
+
+                    Port::new((current, previous))
+                }
+                PortOutput::Disconnected => Port::Disconnected,
+            })
     }
 }
 
 // -------------------------------------------------------------------------------------------------
 
-// Disconnection
+// Outputs
 
-#[allow(dead_code)]
-pub(crate) trait Disconnect {
-    fn disconnect(&mut self);
+#[derive(new, Debug)]
+pub struct PortOutputs {
+    outputs: Vec<Arc<SyncUnsafeCell<PortOutput>>>,
 }
 
-// impl<P> Disconnect for Port<P>
-// where
-//     P: Disconnect,
-// {
-//     fn disconnect(&mut self) {
-//         unsafe {
-//             (*self.0.get()).disconnect();
-//         }
-//     }
-// }
+impl PortOutputs {
+    #[must_use]
+    pub fn from_definition(definition: &ModuleDefinition) -> Self {
+        let output = definition.outputs.iter().map(|_| Arc::default()).collect();
 
-// impl Disconnect for Input {
-//     fn disconnect(&mut self) {
-//         if let Self::Connected(output) = self {
-//             unsafe {
-//                 (*output.get()) = Output::Disconnected;
-//             }
-//         }
+        Self::new(output)
+    }
+}
 
-//         *self = Self::Disconnected;
-//     }
-// }
+// -------------------------------------------------------------------------------------------------
 
-// impl Disconnect for Output {
-//     fn disconnect(&mut self) {
-//         if let Self::Connected(input, _) = self {
-//             unsafe {
-//                 (*input.get()) = Input::Disconnected;
-//             }
-//         }
+// Reference
 
-//         *self = Self::Disconnected;
-//     }
-// }
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum PortReference {
+    Input(PortInputReference),
+    Output(PortOutputReference),
+}
+
+impl From<PortInputReference> for PortReference {
+    fn from(input_ref: PortInputReference) -> Self {
+        Self::Input(input_ref)
+    }
+}
+
+impl From<PortOutputReference> for PortReference {
+    fn from(output_ref: PortOutputReference) -> Self {
+        Self::Output(output_ref)
+    }
+}

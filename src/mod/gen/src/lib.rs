@@ -18,19 +18,21 @@ use open_modular_core::{
 };
 use open_modular_engine::{
     module::{
-        Define,
-        Instantiate,
+        ModuleDefine,
         ModuleDefinition,
         ModuleDefinitionBuilder,
-        Process,
-        ProcessArgs,
+        ModuleInstantiate,
         module,
     },
     port::{
-        GetPortOutputVector as _,
         Port,
         PortInputs,
+        PortOutputVectorGet as _,
         PortOutputs,
+    },
+    processor::{
+        Process,
+        ProcessArgs,
     },
 };
 use tracing::instrument;
@@ -59,7 +61,7 @@ where
     _r: PhantomData<R>,
 }
 
-impl<R> Define for Sine<R>
+impl<R> ModuleDefine for Sine<R>
 where
     R: Debug,
 {
@@ -71,7 +73,7 @@ where
     }
 }
 
-impl<R> Instantiate for Sine<R>
+impl<R> ModuleInstantiate for Sine<R>
 where
     R: Debug,
 {
