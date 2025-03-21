@@ -12,11 +12,13 @@ use open_modular_engine::{
         module,
     },
     port::{
-        GetPortInput as _,
-        GetPortInputs as _,
-        GetPortOutput as _,
+        GetPortInputVector as _,
+        GetPortInputs,
+        GetPortOutputVector as _,
         GetPortOutputs as _,
         Port,
+        PortInputs,
+        PortOutputs,
         Ports,
     },
 };
@@ -29,6 +31,8 @@ use open_modular_engine::{
 #[derive(new, Debug)]
 #[new(vis())]
 pub struct Multiple<R> {
+    inputs: PortInputs,
+    outputs: PortOutputs,
     ports: Ports,
     #[new(default)]
     _r: PhantomData<R>,
@@ -51,18 +55,21 @@ impl<R> Instantiate for Multiple<R> {
     type Context = R;
 
     fn instantiate(ports: Ports, _context: Self::Context) -> Self {
-        Self::new(ports)
+        let inputs = ports.inputs();
+        let outputs = ports.outputs();
+
+        Self::new(inputs, outputs, ports)
     }
 }
 
 impl<R> Process for Multiple<R> {
     fn process(&mut self, args: &ProcessArgs) {
-        let inputs = self.inputs();
-        let mut outputs = self.outputs();
+        // let inputs = self.inputs();
+        // let mut outputs = self.outputs();
 
-        if let Some(Port::Connected(input)) = inputs.port(0, &args.token) {
+        if let Some(Port::Connected(input)) = self.inputs.vector(0, &args.token) {
             for i in 0..4 {
-                if let Some(Port::Connected((output, _))) = outputs.port(i, &args.token) {
+                if let Some(Port::Connected(output)) = self.outputs.vector(i, &args.token) {
                     *output = *input;
                 }
             }

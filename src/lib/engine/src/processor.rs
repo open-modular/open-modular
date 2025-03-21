@@ -73,19 +73,9 @@ where
         let outputs = unsafe { (*output_instance.get()).outputs() };
 
         let output = outputs
-            .outputs
+            .output
             .get(output_ref.port)
             .expect("output to exist");
-
-        // let output = unsafe {
-        //     (*self
-        //         .instances
-        //         .get(&output_ref.0.0)
-        //         .expect("output instance to exist")
-        //         .get())
-        //     .output_mut(output_ref.0.1)
-        //     .expect("output port to exist")
-        // };
 
         let input_instance = self
             .instances
@@ -95,7 +85,7 @@ where
         let inputs = unsafe { (*input_instance.get()).inputs() };
 
         let input = inputs
-            .inputs
+            .input
             .get(input_ref.port)
             .expect("input port to exist");
 

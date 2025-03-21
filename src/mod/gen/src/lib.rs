@@ -27,9 +27,10 @@ use open_modular_engine::{
         module,
     },
     port::{
-        GetPortOutput as _,
+        GetPortOutputVector as _,
         GetPortOutputs as _,
         Port,
+        PortOutputs,
         Ports,
     },
 };
@@ -52,6 +53,7 @@ where
     scale: Vector,
     time: Vector,
 
+    outputs: PortOutputs,
     ports: Ports,
     #[debug(skip)]
     #[new(default)]
@@ -92,7 +94,9 @@ where
         let scale = Vector::splat(0.15);
         let output = Vector::default();
 
-        Self::new(factor, increment, output, scale, time, ports)
+        let outputs = ports.outputs();
+
+        Self::new(factor, increment, output, scale, time, outputs, ports)
     }
 }
 
@@ -101,9 +105,7 @@ where
     R: Debug,
 {
     fn process(&mut self, args: &ProcessArgs) {
-        let mut outputs = self.outputs();
-
-        if let Some(Port::Connected((output, _))) = outputs.port(0, &args.token) {
+        if let Some(Port::Connected(output)) = self.outputs.vector(0, &args.token) {
             self.time += self.increment;
 
             self.output = self.time;

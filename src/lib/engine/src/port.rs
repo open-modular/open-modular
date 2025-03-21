@@ -18,8 +18,9 @@ use crate::module::{
 // Port
 // =================================================================================================
 
-#[derive(Debug)]
+#[derive(new, Debug)]
 pub enum Port<T> {
+    #[new]
     Connected(T),
     Disconnected,
 }
@@ -30,7 +31,8 @@ impl<T> Default for Port<T> {
     }
 }
 
-#[derive(Debug)]
+#[derive(new, Debug)]
+#[new(vis())]
 pub struct Ports {
     input: Arc<Vec<Arc<SyncUnsafeCell<PortInput>>>>,
     output: Arc<Vec<Arc<SyncUnsafeCell<PortOutput>>>>,
@@ -42,7 +44,7 @@ impl Ports {
         let input = Arc::new(definition.inputs.iter().map(|_| Arc::default()).collect());
         let output = Arc::new(definition.outputs.iter().map(|_| Arc::default()).collect());
 
-        Self { input, output }
+        Self::new(input, output)
     }
 }
 
@@ -68,8 +70,9 @@ impl From<PortOutputReference> for PortReference {
 
 // Input
 
-#[derive(Debug)]
+#[derive(new, Debug)]
 pub enum PortInput {
+    #[new]
     Connected {
         output: Arc<SyncUnsafeCell<PortOutput>>,
     },
@@ -82,23 +85,23 @@ impl Default for PortInput {
     }
 }
 
-pub trait GetPortInput {
-    fn port(&self, port: usize, token: &ProcessToken) -> Option<Port<&Vector>>;
+pub trait GetPortInputVector {
+    fn vector(&self, port: usize, token: &ProcessToken) -> Option<Port<&Vector>>;
 }
 
 #[derive(new, Debug)]
 pub struct PortInputs {
-    pub(crate) inputs: Arc<Vec<Arc<SyncUnsafeCell<PortInput>>>>,
+    pub(crate) input: Arc<Vec<Arc<SyncUnsafeCell<PortInput>>>>,
 }
 
-impl GetPortInput for PortInputs {
-    fn port(&self, port: usize, token: &ProcessToken) -> Option<Port<&Vector>> {
-        self.inputs
+impl GetPortInputVector for PortInputs {
+    fn vector(&self, port: usize, token: &ProcessToken) -> Option<Port<&Vector>> {
+        self.input
             .get(port)
             .map(|input| match unsafe { &(*input.get()) } {
                 PortInput::Connected { output } => match unsafe { &(*output.get()) } {
-                    PortOutput::Connected(_, vectors) => {
-                        Port::Connected(unsafe { vectors.get_unchecked(token.0) })
+                    PortOutput::Connected { vectors, .. } => {
+                        Port::new(unsafe { vectors.get_unchecked(token.0) })
                     }
                     PortOutput::Disconnected => Port::Disconnected,
                 },
@@ -109,6 +112,12 @@ impl GetPortInput for PortInputs {
 
 pub trait GetPortInputs {
     fn inputs(&self) -> PortInputs;
+}
+
+impl GetPortInputs for Ports {
+    fn inputs(&self) -> PortInputs {
+        PortInputs::new(self.input.clone())
+    }
 }
 
 impl<T> GetPortInputs for T
@@ -153,9 +162,13 @@ impl PortInputReference {
 
 // Output
 
-#[derive(Debug)]
+#[derive(new, Debug)]
 pub enum PortOutput {
-    Connected(Arc<SyncUnsafeCell<PortInput>>, Box<[Vector; 2]>),
+    #[new]
+    Connected {
+        input: Arc<SyncUnsafeCell<PortInput>>,
+        vectors: Box<[Vector; 2]>,
+    },
     Disconnected,
 }
 
@@ -165,21 +178,44 @@ impl Default for PortOutput {
     }
 }
 
-pub trait GetPortOutput {
-    fn port(&mut self, port: usize, token: &ProcessToken) -> Option<Port<(&mut Vector, &Vector)>>;
+pub trait GetPortOutputVector {
+    fn vector(&mut self, port: usize, token: &ProcessToken) -> Option<Port<&mut Vector>>;
+
+    fn vectors(
+        &mut self,
+        port: usize,
+        token: &ProcessToken,
+    ) -> Option<Port<(&mut Vector, &Vector)>>;
 }
 
 #[derive(new, Debug)]
 pub struct PortOutputs {
-    pub(crate) outputs: Arc<Vec<Arc<SyncUnsafeCell<PortOutput>>>>,
+    pub(crate) output: Arc<Vec<Arc<SyncUnsafeCell<PortOutput>>>>,
 }
 
-impl GetPortOutput for PortOutputs {
-    fn port(&mut self, port: usize, token: &ProcessToken) -> Option<Port<(&mut Vector, &Vector)>> {
-        self.outputs
+impl GetPortOutputVector for PortOutputs {
+    fn vector(&mut self, port: usize, token: &ProcessToken) -> Option<Port<&mut Vector>> {
+        self.output
             .get(port)
             .map(|output| match unsafe { &mut (*output.get()) } {
-                PortOutput::Connected(_, vectors) => {
+                PortOutput::Connected { vectors, .. } => {
+                    let current = unsafe { vectors.get_unchecked_mut(token.0) };
+
+                    Port::new(current)
+                }
+                PortOutput::Disconnected => Port::Disconnected,
+            })
+    }
+
+    fn vectors(
+        &mut self,
+        port: usize,
+        token: &ProcessToken,
+    ) -> Option<Port<(&mut Vector, &Vector)>> {
+        self.output
+            .get(port)
+            .map(|output| match unsafe { &mut (*output.get()) } {
+                PortOutput::Connected { vectors, .. } => {
                     let [current, previous] = unsafe {
                         vectors.get_disjoint_unchecked_mut([token.0, usize::from(token.0 == 0)])
                     };
@@ -187,7 +223,7 @@ impl GetPortOutput for PortOutputs {
                     let current: &mut Vector = current;
                     let previous: &Vector = previous;
 
-                    Port::Connected((current, previous))
+                    Port::new((current, previous))
                 }
                 PortOutput::Disconnected => Port::Disconnected,
             })
@@ -196,6 +232,12 @@ impl GetPortOutput for PortOutputs {
 
 pub trait GetPortOutputs {
     fn outputs(&self) -> PortOutputs;
+}
+
+impl GetPortOutputs for Ports {
+    fn outputs(&self) -> PortOutputs {
+        PortOutputs::new(self.output.clone())
+    }
 }
 
 impl<T> GetPortOutputs for T
@@ -247,13 +289,8 @@ pub(crate) trait Connect<P> {
 impl Connect<Arc<SyncUnsafeCell<PortInput>>> for Arc<SyncUnsafeCell<PortOutput>> {
     fn connect(&self, input: &Arc<SyncUnsafeCell<PortInput>>) {
         unsafe {
-            (*self.get()) = PortOutput::Connected(input.clone(), Box::new([Vector::default(); 2]));
-        }
-
-        unsafe {
-            (*input.get()) = PortInput::Connected {
-                output: self.clone(),
-            };
+            (*self.get()) = PortOutput::new(input.clone(), Box::new([Vector::default(); 2]));
+            (*input.get()) = PortInput::new(self.clone());
         }
     }
 }
