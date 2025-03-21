@@ -64,23 +64,22 @@ where
     M: Module,
 {
     pub fn connect(&mut self, output_ref: &PortOutputReference, input_ref: &PortInputReference) {
-        let output_instance = self
+        let outputs = self
             .instances
             .get(&output_ref.instance)
-            .expect("instance to exist");
+            .map(|instance| unsafe { (*instance.get()).as_mut() })
+            .expect("output instance to exist");
 
-        let output_ports = unsafe { (*output_instance.get()).as_mut() };
-        let output_port = output_ports.port(output_ref.port).expect("port to exist");
-
-        let input_instance = self
+        let inputs = self
             .instances
             .get(&input_ref.instance)
-            .expect("instance to exist");
+            .map(|instance| unsafe { (*instance.get()).as_ref() })
+            .expect("input instance to exist");
 
-        let input_ports = unsafe { (*input_instance.get()).as_ref() };
-        let input_port = input_ports.port(input_ref.port).expect("port to exist");
+        let output = outputs.port(output_ref.port).expect("output port to exist");
+        let input = inputs.port(input_ref.port).expect("input port to exist");
 
-        output_port.connect(input_port);
+        output.connect(input);
     }
 
     pub fn disconnect(&mut self, port_ref: impl Into<PortReference>) {
