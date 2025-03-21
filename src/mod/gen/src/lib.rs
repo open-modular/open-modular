@@ -27,8 +27,8 @@ use open_modular_engine::{
         module,
     },
     port::{
-        GetPortOutput,
-        GetPortOutputs,
+        GetPortOutput as _,
+        GetPortOutputs as _,
         Port,
         Ports,
     },

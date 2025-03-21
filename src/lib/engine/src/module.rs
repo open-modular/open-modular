@@ -1,11 +1,14 @@
 use bon::Builder;
+use fancy_constructor::new;
 use uuid::Uuid;
 
 use crate::port::{
     PortInputDefinition,
     PortInputDefinitionBuilder,
+    PortInputReference,
     PortOutputDefinition,
     PortOutputDefinitionBuilder,
+    PortOutputReference,
     Ports,
 };
 
@@ -27,6 +30,27 @@ pub trait ModuleSource {
     type Context;
 
     fn instantiate(id: &Uuid, context: Self::Context) -> Self;
+}
+
+// -------------------------------------------------------------------------------------------------
+
+// Instance Ref
+
+#[derive(new, Clone, Debug, Eq, PartialEq)]
+pub struct ModuleInstanceReference {
+    pub instance: Uuid,
+}
+
+impl ModuleInstanceReference {
+    #[must_use]
+    pub fn input_ref(&self, input: usize) -> PortInputReference {
+        PortInputReference::new(self.instance, input)
+    }
+
+    #[must_use]
+    pub fn output_ref(&self, output: usize) -> PortOutputReference {
+        PortOutputReference::new(self.instance, output)
+    }
 }
 
 // -------------------------------------------------------------------------------------------------

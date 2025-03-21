@@ -8,12 +8,10 @@ use fancy_constructor::new;
 use open_modular_core::Vector;
 use uuid::Uuid;
 
-use crate::{
-    module::{
-        ModuleDefinition,
-        ProcessToken,
-    },
-    processor::InstanceRef,
+use crate::module::{
+    ModuleDefinition,
+    ModuleInstanceReference,
+    ProcessToken,
 };
 
 // =================================================================================================
@@ -72,7 +70,9 @@ impl From<PortOutputReference> for PortReference {
 
 #[derive(Debug)]
 pub enum PortInput {
-    Connected(Arc<SyncUnsafeCell<PortOutput>>),
+    Connected {
+        output: Arc<SyncUnsafeCell<PortOutput>>,
+    },
     Disconnected,
 }
 
@@ -83,7 +83,7 @@ impl Default for PortInput {
 }
 
 pub trait GetPortInput {
-    fn port(&self, input: usize, token: &ProcessToken) -> Option<Port<&Vector>>;
+    fn port(&self, port: usize, token: &ProcessToken) -> Option<Port<&Vector>>;
 }
 
 #[derive(new, Debug)]
@@ -92,11 +92,11 @@ pub struct PortInputs {
 }
 
 impl GetPortInput for PortInputs {
-    fn port(&self, input: usize, token: &ProcessToken) -> Option<Port<&Vector>> {
+    fn port(&self, port: usize, token: &ProcessToken) -> Option<Port<&Vector>> {
         self.inputs
-            .get(input)
+            .get(port)
             .map(|input| match unsafe { &(*input.get()) } {
-                PortInput::Connected(output) => match unsafe { &(*output.get()) } {
+                PortInput::Connected { output } => match unsafe { &(*output.get()) } {
                     PortOutput::Connected(_, vectors) => {
                         Port::Connected(unsafe { vectors.get_unchecked(token.0) })
                     }
@@ -136,13 +136,16 @@ where
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct PortInputReference(pub (Uuid, usize));
+#[derive(new, Clone, Debug, Eq, PartialEq)]
+pub struct PortInputReference {
+    pub instance: Uuid,
+    pub port: usize,
+}
 
 impl PortInputReference {
     #[must_use]
-    pub fn instance_ref(&self) -> InstanceRef {
-        InstanceRef(self.0.0)
+    pub fn instance_ref(&self) -> ModuleInstanceReference {
+        ModuleInstanceReference::new(self.instance)
     }
 }
 
@@ -163,8 +166,7 @@ impl Default for PortOutput {
 }
 
 pub trait GetPortOutput {
-    fn port(&mut self, output: usize, token: &ProcessToken)
-    -> Option<Port<(&mut Vector, &Vector)>>;
+    fn port(&mut self, port: usize, token: &ProcessToken) -> Option<Port<(&mut Vector, &Vector)>>;
 }
 
 #[derive(new, Debug)]
@@ -173,13 +175,9 @@ pub struct PortOutputs {
 }
 
 impl GetPortOutput for PortOutputs {
-    fn port(
-        &mut self,
-        output: usize,
-        token: &ProcessToken,
-    ) -> Option<Port<(&mut Vector, &Vector)>> {
+    fn port(&mut self, port: usize, token: &ProcessToken) -> Option<Port<(&mut Vector, &Vector)>> {
         self.outputs
-            .get(output)
+            .get(port)
             .map(|output| match unsafe { &mut (*output.get()) } {
                 PortOutput::Connected(_, vectors) => {
                     let [current, previous] = unsafe {
@@ -225,13 +223,16 @@ where
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct PortOutputReference(pub (Uuid, usize));
+#[derive(new, Clone, Debug, Eq, PartialEq)]
+pub struct PortOutputReference {
+    pub instance: Uuid,
+    pub port: usize,
+}
 
 impl PortOutputReference {
     #[must_use]
-    pub fn instance_ref(&self) -> InstanceRef {
-        InstanceRef(self.0.0)
+    pub fn instance_ref(&self) -> ModuleInstanceReference {
+        ModuleInstanceReference::new(self.instance)
     }
 }
 
@@ -250,7 +251,9 @@ impl Connect<Arc<SyncUnsafeCell<PortInput>>> for Arc<SyncUnsafeCell<PortOutput>>
         }
 
         unsafe {
-            (*input.get()) = PortInput::Connected(self.clone());
+            (*input.get()) = PortInput::Connected {
+                output: self.clone(),
+            };
         }
     }
 }

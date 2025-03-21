@@ -5,10 +5,7 @@ use std::{
 };
 
 use fancy_constructor::new;
-use open_modular_engine::processor::{
-    InstanceRef,
-    Processor,
-};
+use open_modular_engine::processor::Processor;
 #[cfg(feature = "perf")]
 use open_modular_perf::timing::TimingCollector;
 use open_modular_runtime::{
@@ -30,12 +27,9 @@ use tracing::{
 };
 use uuid::Uuid;
 
-use crate::{
-    COMPUTE_CAPACITY,
-    runtime::{
-        Runtime,
-        RuntimeModule,
-    },
+use crate::runtime::{
+    Runtime,
+    RuntimeModule,
 };
 
 // =================================================================================================
@@ -56,7 +50,7 @@ where
     #[new(default)]
     iteration: u64,
     #[new(default)]
-    processor: Processor<COMPUTE_CAPACITY, M>,
+    processor: Processor<M>,
 
     #[cfg(feature = "perf")]
     #[new(val = runtime.timing_aggregator.collector("compute/compute", 50, 50))]
@@ -94,7 +88,7 @@ where
 
             let sine_id = Uuid::from_str("f75487a4-7847-43f9-ab47-71bd6acfb78d").unwrap();
             let sine = M::instantiate(&sine_id, self.context.clone());
-            let sine_ref: InstanceRef = self.processor.add(sine_id, sine);
+            let sine_ref = self.processor.add(sine_id, sine);
             let sine_out_ref = sine_ref.output_ref(0);
 
             let mult_id = Uuid::from_str("54d93000-7dd2-45ce-a3f1-ad53b0a04fac").unwrap();
@@ -106,7 +100,7 @@ where
 
             let out_id = Uuid::from_str("47d0fca2-cb58-4011-8a55-31ecd4b184c1").unwrap();
             let out = M::instantiate(&out_id, self.context.clone());
-            let out_ref: InstanceRef = self.processor.add(out_id, out);
+            let out_ref = self.processor.add(out_id, out);
             let out_l_ref = out_ref.input_ref(0);
             let out_r_ref = out_ref.input_ref(1);
 

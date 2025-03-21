@@ -23,30 +23,26 @@ use crate::module::ModulePerf;
 #[allow(clippy::cast_precision_loss)]
 #[allow(dead_code)]
 pub fn run() {
-    let mut engine = Processor::<256, ModulePerf<()>>::default();
+    let mut engine = Processor::<ModulePerf<()>>::default();
 
     for _ in 0..50 {
-        unsafe {
-            let a_ref = engine.add(
-                Uuid::new_v4(),
-                ModulePerf::instantiate(&Sine::<()>::id(), ()),
-            );
-            let b_ref = engine.add(
-                Uuid::new_v4(),
-                ModulePerf::instantiate(&Multiple::<()>::id(), ()),
-            );
+        let a_ref = engine.add(
+            Uuid::new_v4(),
+            ModulePerf::instantiate(&Sine::<()>::id(), ()),
+        );
+        let b_ref = engine.add(
+            Uuid::new_v4(),
+            ModulePerf::instantiate(&Multiple::<()>::id(), ()),
+        );
 
-            engine.connect(&a_ref.output_ref(0), &b_ref.input_ref(0));
-        }
+        engine.connect(&a_ref.output_ref(0), &b_ref.input_ref(0));
     }
 
     let iterations = 1_000_000;
     let start = Instant::now();
 
     for i in 0..iterations {
-        unsafe {
-            engine.process(i);
-        }
+        engine.process(i);
     }
 
     let stop = Instant::now();

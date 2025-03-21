@@ -13,21 +13,17 @@ use uuid::Uuid;
 use crate::{
     module::{
         Module,
+        ModuleInstanceReference,
         ProcessArgs,
     },
     port::{
-        // Connect as _,
         Connect as _,
         Disconnect as _,
+        GetPortInputs as _,
+        GetPortOutputs as _,
         PortInputReference,
         PortOutputReference,
         PortReference,
-    },
-    port::{
-        GetPortInputs,
-        // GetInputMut as _,
-        // GetOutputMut as _,
-        GetPortOutputs,
     },
 };
 
@@ -36,7 +32,7 @@ use crate::{
 // =================================================================================================
 
 #[derive(Debug)]
-pub struct Processor<const C: usize, M>
+pub struct Processor<M>
 where
     M: Module,
 {
@@ -44,41 +40,41 @@ where
     instances: IndexMap<Uuid, SyncUnsafeCell<M>>,
 }
 
-impl<const C: usize, M> Processor<C, M>
+impl<M> Processor<M>
 where
     M: Debug + Module,
 {
     #[instrument(level = "debug", skip(self))]
-    pub fn add(&mut self, key: Uuid, instance: M) -> InstanceRef {
+    pub fn add(&mut self, key: Uuid, instance: M) -> ModuleInstanceReference {
         trace!(?instance, "adding module");
 
         let instance = SyncUnsafeCell::new(instance);
 
         self.instances.insert(key, instance);
 
-        InstanceRef(key)
+        ModuleInstanceReference::new(key)
     }
 
-    pub fn remove(&mut self, instance_ref: &InstanceRef) {
-        self.instances.swap_remove(&instance_ref.0);
+    pub fn remove(&mut self, instance_ref: &ModuleInstanceReference) {
+        self.instances.swap_remove(&instance_ref.instance);
     }
 }
 
-impl<const C: usize, M> Processor<C, M>
+impl<M> Processor<M>
 where
     M: Module,
 {
     pub fn connect(&mut self, output_ref: &PortOutputReference, input_ref: &PortInputReference) {
         let output_instance = self
             .instances
-            .get(&output_ref.0.0)
+            .get(&output_ref.instance)
             .expect("instance to exist");
 
         let outputs = unsafe { (*output_instance.get()).outputs() };
 
         let output = outputs
             .outputs
-            .get(output_ref.0.1)
+            .get(output_ref.port)
             .expect("output to exist");
 
         // let output = unsafe {
@@ -93,14 +89,14 @@ where
 
         let input_instance = self
             .instances
-            .get(&input_ref.0.0)
+            .get(&input_ref.instance)
             .expect("instance to exist");
 
         let inputs = unsafe { (*input_instance.get()).inputs() };
 
         let input = inputs
             .inputs
-            .get(input_ref.0.1)
+            .get(input_ref.port)
             .expect("input port to exist");
 
         output.connect(input);
@@ -138,7 +134,7 @@ where
     }
 }
 
-impl<const C: usize, M> Processor<C, M>
+impl<M> Processor<M>
 where
     M: Module,
 {
@@ -150,7 +146,7 @@ where
     }
 }
 
-impl<const C: usize, M> Default for Processor<C, M>
+impl<M> Default for Processor<M>
 where
     M: Module,
 {
@@ -159,24 +155,5 @@ where
             args: ProcessArgs::default(),
             instances: IndexMap::default(),
         }
-    }
-}
-
-// -------------------------------------------------------------------------------------------------
-
-// Instance Ref
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct InstanceRef(pub Uuid);
-
-impl InstanceRef {
-    #[must_use]
-    pub fn input_ref(&self, input: usize) -> PortInputReference {
-        PortInputReference((self.0, input))
-    }
-
-    #[must_use]
-    pub fn output_ref(&self, output: usize) -> PortOutputReference {
-        PortOutputReference((self.0, output))
     }
 }
