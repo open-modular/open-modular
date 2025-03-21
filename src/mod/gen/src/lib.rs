@@ -28,10 +28,9 @@ use open_modular_engine::{
     },
     port::{
         GetPortOutputVector as _,
-        GetPortOutputs as _,
         Port,
+        PortInputs,
         PortOutputs,
-        Ports,
     },
 };
 use tracing::instrument;
@@ -53,8 +52,8 @@ where
     scale: Vector,
     time: Vector,
 
-    outputs: PortOutputs,
-    ports: Ports,
+    port_inputs: PortInputs,
+    port_outputs: PortOutputs,
     #[debug(skip)]
     #[new(default)]
     _r: PhantomData<R>,
@@ -78,8 +77,12 @@ where
 {
     type Context = R;
 
-    #[instrument(level = "debug", skip(ports, _context))]
-    fn instantiate(ports: Ports, _context: Self::Context) -> Self {
+    #[instrument(level = "debug", skip(_context, port_inputs, port_outputs))]
+    fn instantiate(
+        _context: Self::Context,
+        port_inputs: PortInputs,
+        port_outputs: PortOutputs,
+    ) -> Self {
         let factor = 440. * TAU;
         let increment = 1. / SAMPLE_RATE_F64;
 
@@ -94,9 +97,15 @@ where
         let scale = Vector::splat(0.15);
         let output = Vector::default();
 
-        let outputs = ports.outputs();
-
-        Self::new(factor, increment, output, scale, time, outputs, ports)
+        Self::new(
+            factor,
+            increment,
+            output,
+            scale,
+            time,
+            port_inputs,
+            port_outputs,
+        )
     }
 }
 
@@ -105,7 +114,7 @@ where
     R: Debug,
 {
     fn process(&mut self, args: &ProcessArgs) {
-        if let Some(Port::Connected(output)) = self.outputs.vector(0, &args.token) {
+        if let Some(Port::Connected(output)) = self.port_outputs.vector(0, &args.token) {
             self.time += self.increment;
 
             self.output = self.time;

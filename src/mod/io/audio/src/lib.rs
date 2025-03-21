@@ -16,10 +16,9 @@ use open_modular_engine::{
     },
     port::{
         GetPortInputVector,
-        GetPortInputs,
         Port,
         PortInputs,
-        Ports,
+        PortOutputs,
     },
 };
 use open_modular_runtime::io::audio::{
@@ -47,8 +46,8 @@ pub struct Output<R>
 where
     R: Debug + GetAudio,
 {
-    inputs: PortInputs,
-    ports: Ports,
+    port_inputs: PortInputs,
+    port_outputs: PortOutputs,
     runtime: R,
     state: OutputState,
 }
@@ -73,14 +72,17 @@ where
 {
     type Context = R;
 
-    #[instrument(level = "debug", skip(ports, context))]
-    fn instantiate(ports: Ports, context: Self::Context) -> Self {
+    #[instrument(level = "debug", skip(context, port_inputs, port_outputs))]
+    fn instantiate(
+        context: Self::Context,
+        port_inputs: PortInputs,
+        port_outputs: PortOutputs,
+    ) -> Self {
         info!("instantiating audio output module, and setting state to await pending outputs");
 
         let state = OutputState::AwaitingOutputs(context.audio().outputs());
-        let inputs = ports.inputs();
 
-        Self::new(inputs, ports, context, state)
+        Self::new(port_inputs, port_outputs, context, state)
     }
 }
 
@@ -98,7 +100,9 @@ where
                     .iter_mut()
                     .enumerate()
                     .for_each(|(i, output_vector)| {
-                        if let Some(Port::Connected(input)) = self.inputs.vector(i, &args.token) {
+                        if let Some(Port::Connected(input)) =
+                            self.port_inputs.vector(i, &args.token)
+                        {
                             output_vector.clone_from(input);
                         }
                     });

@@ -31,23 +31,6 @@ impl<T> Default for Port<T> {
     }
 }
 
-#[derive(new, Debug)]
-#[new(vis())]
-pub struct Ports {
-    input: Arc<Vec<Arc<SyncUnsafeCell<PortInput>>>>,
-    output: Arc<Vec<Arc<SyncUnsafeCell<PortOutput>>>>,
-}
-
-impl Ports {
-    #[must_use]
-    pub fn from_definition(definition: &ModuleDefinition) -> Self {
-        let input = Arc::new(definition.inputs.iter().map(|_| Arc::default()).collect());
-        let output = Arc::new(definition.outputs.iter().map(|_| Arc::default()).collect());
-
-        Self::new(input, output)
-    }
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PortReference {
     Input(PortInputReference),
@@ -91,12 +74,21 @@ pub trait GetPortInputVector {
 
 #[derive(new, Debug)]
 pub struct PortInputs {
-    pub(crate) input: Arc<Vec<Arc<SyncUnsafeCell<PortInput>>>>,
+    pub(crate) inputs: Vec<Arc<SyncUnsafeCell<PortInput>>>,
+}
+
+impl PortInputs {
+    #[must_use]
+    pub fn from_definition(definition: &ModuleDefinition) -> Self {
+        let input = definition.inputs.iter().map(|_| Arc::default()).collect();
+
+        Self::new(input)
+    }
 }
 
 impl GetPortInputVector for PortInputs {
     fn vector(&self, port: usize, token: &ProcessToken) -> Option<Port<&Vector>> {
-        self.input
+        self.inputs
             .get(port)
             .map(|input| match unsafe { &(*input.get()) } {
                 PortInput::Connected { output } => match unsafe { &(*output.get()) } {
@@ -107,25 +99,6 @@ impl GetPortInputVector for PortInputs {
                 },
                 PortInput::Disconnected => Port::Disconnected,
             })
-    }
-}
-
-pub trait GetPortInputs {
-    fn inputs(&self) -> PortInputs;
-}
-
-impl GetPortInputs for Ports {
-    fn inputs(&self) -> PortInputs {
-        PortInputs::new(self.input.clone())
-    }
-}
-
-impl<T> GetPortInputs for T
-where
-    T: AsRef<Ports>,
-{
-    fn inputs(&self) -> PortInputs {
-        PortInputs::new(self.as_ref().input.clone())
     }
 }
 
@@ -190,12 +163,21 @@ pub trait GetPortOutputVector {
 
 #[derive(new, Debug)]
 pub struct PortOutputs {
-    pub(crate) output: Arc<Vec<Arc<SyncUnsafeCell<PortOutput>>>>,
+    pub(crate) outputs: Vec<Arc<SyncUnsafeCell<PortOutput>>>,
+}
+
+impl PortOutputs {
+    #[must_use]
+    pub fn from_definition(definition: &ModuleDefinition) -> Self {
+        let output = definition.outputs.iter().map(|_| Arc::default()).collect();
+
+        Self::new(output)
+    }
 }
 
 impl GetPortOutputVector for PortOutputs {
     fn vector(&mut self, port: usize, token: &ProcessToken) -> Option<Port<&mut Vector>> {
-        self.output
+        self.outputs
             .get(port)
             .map(|output| match unsafe { &mut (*output.get()) } {
                 PortOutput::Connected { vectors, .. } => {
@@ -212,7 +194,7 @@ impl GetPortOutputVector for PortOutputs {
         port: usize,
         token: &ProcessToken,
     ) -> Option<Port<(&mut Vector, &Vector)>> {
-        self.output
+        self.outputs
             .get(port)
             .map(|output| match unsafe { &mut (*output.get()) } {
                 PortOutput::Connected { vectors, .. } => {
@@ -227,25 +209,6 @@ impl GetPortOutputVector for PortOutputs {
                 }
                 PortOutput::Disconnected => Port::Disconnected,
             })
-    }
-}
-
-pub trait GetPortOutputs {
-    fn outputs(&self) -> PortOutputs;
-}
-
-impl GetPortOutputs for Ports {
-    fn outputs(&self) -> PortOutputs {
-        PortOutputs::new(self.output.clone())
-    }
-}
-
-impl<T> GetPortOutputs for T
-where
-    T: AsRef<Ports>,
-{
-    fn outputs(&self) -> PortOutputs {
-        PortOutputs::new(self.as_ref().output.clone())
     }
 }
 

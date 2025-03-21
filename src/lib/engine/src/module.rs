@@ -6,10 +6,11 @@ use crate::port::{
     PortInputDefinition,
     PortInputDefinitionBuilder,
     PortInputReference,
+    PortInputs,
     PortOutputDefinition,
     PortOutputDefinitionBuilder,
     PortOutputReference,
-    Ports,
+    PortOutputs,
 };
 
 // =================================================================================================
@@ -18,8 +19,8 @@ use crate::port::{
 
 #[rustfmt::skip]
 pub trait Module:
-      AsMut<Ports>
-    + AsRef<Ports>
+      AsMut<PortOutputs>
+    + AsRef<PortInputs>
     + Process
 {
 }
@@ -126,7 +127,11 @@ pub trait Identify {
 pub trait Instantiate {
     type Context;
 
-    fn instantiate(node: Ports, runtime: Self::Context) -> Self;
+    fn instantiate(
+        context: Self::Context,
+        port_inputs: PortInputs,
+        port_outputs: PortOutputs,
+    ) -> Self;
 }
 
 // -------------------------------------------------------------------------------------------------

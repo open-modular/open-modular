@@ -69,19 +69,19 @@ pub(crate) fn module_tokens(args: &Args, item: &ItemStruct) -> TokenStream2 {
         mod #module {
             use super::*;
 
-            // AsMut<Ports>
+            // AsMut<PortOutputs>
 
-            impl #generics AsMut<::open_modular_engine::port::Ports> for #ident #generics #where_clause {
-                fn as_mut(&mut self) -> &mut ::open_modular_engine::port::Ports {
-                    &mut self.ports
+            impl #generics AsMut<::open_modular_engine::port::PortOutputs> for #ident #generics #where_clause {
+                fn as_mut(&mut self) -> &mut ::open_modular_engine::port::PortOutputs {
+                    &mut self.port_outputs
                 }
             }
 
-            // AsRef<Ports>
+            // AsRef<PortInputs>
 
-            impl #generics AsRef<::open_modular_engine::port::Ports> for #ident #generics #where_clause {
-                fn as_ref(&self) -> & ::open_modular_engine::port::Ports {
-                    &self.ports
+            impl #generics AsRef<::open_modular_engine::port::PortInputs> for #ident #generics #where_clause {
+                fn as_ref(&self) -> & ::open_modular_engine::port::PortInputs {
+                    &self.port_inputs
                 }
             }
 

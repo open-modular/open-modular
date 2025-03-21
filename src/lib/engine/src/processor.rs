@@ -19,8 +19,6 @@ use crate::{
     port::{
         Connect as _,
         Disconnect as _,
-        GetPortInputs as _,
-        GetPortOutputs as _,
         PortInputReference,
         PortOutputReference,
         PortReference,
@@ -70,10 +68,10 @@ where
             .get(&output_ref.instance)
             .expect("instance to exist");
 
-        let outputs = unsafe { (*output_instance.get()).outputs() };
+        let outputs = unsafe { (*output_instance.get()).as_mut() };
 
         let output = outputs
-            .output
+            .outputs
             .get(output_ref.port)
             .expect("output to exist");
 
@@ -82,10 +80,10 @@ where
             .get(&input_ref.instance)
             .expect("instance to exist");
 
-        let inputs = unsafe { (*input_instance.get()).inputs() };
+        let inputs = unsafe { (*input_instance.get()).as_ref() };
 
         let input = inputs
-            .input
+            .inputs
             .get(input_ref.port)
             .expect("input port to exist");
 
