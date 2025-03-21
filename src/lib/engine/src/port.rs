@@ -4,11 +4,15 @@ use std::{
 };
 
 use bon::Builder;
+use fancy_constructor::new;
 use open_modular_core::Vector;
 use uuid::Uuid;
 
 use crate::{
-    module::ProcessToken,
+    module::{
+        ModuleDefinition,
+        ProcessToken,
+    },
     processor::InstanceRef,
 };
 
@@ -16,202 +20,218 @@ use crate::{
 // Port
 // =================================================================================================
 
-#[derive(Debug, Default)]
-pub struct Port<P>(pub(crate) Arc<SyncUnsafeCell<P>>);
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum PortRef {
-    Input(InputRef),
-    Output(OutputRef),
+#[derive(Debug)]
+pub enum Port<T> {
+    Connected(T),
+    Disconnected,
 }
 
-impl From<InputRef> for PortRef {
-    fn from(input_ref: InputRef) -> Self {
+impl<T> Default for Port<T> {
+    fn default() -> Self {
+        Self::Disconnected
+    }
+}
+
+#[derive(Debug)]
+pub struct Ports {
+    input: Arc<Vec<Arc<SyncUnsafeCell<PortInput>>>>,
+    output: Arc<Vec<Arc<SyncUnsafeCell<PortOutput>>>>,
+}
+
+impl Ports {
+    #[must_use]
+    pub fn from_definition(definition: &ModuleDefinition) -> Self {
+        let input = Arc::new(definition.inputs.iter().map(|_| Arc::default()).collect());
+        let output = Arc::new(definition.outputs.iter().map(|_| Arc::default()).collect());
+
+        Self { input, output }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum PortReference {
+    Input(PortInputReference),
+    Output(PortOutputReference),
+}
+
+impl From<PortInputReference> for PortReference {
+    fn from(input_ref: PortInputReference) -> Self {
         Self::Input(input_ref)
     }
 }
 
-impl From<OutputRef> for PortRef {
-    fn from(output_ref: OutputRef) -> Self {
+impl From<PortOutputReference> for PortReference {
+    fn from(output_ref: PortOutputReference) -> Self {
         Self::Output(output_ref)
     }
 }
 
+// -------------------------------------------------------------------------------------------------
+
 // Input
 
-#[derive(Debug, Default)]
-pub struct Input {
-    output: Option<Arc<SyncUnsafeCell<Output>>>,
+#[derive(Debug)]
+pub enum PortInput {
+    Connected(Arc<SyncUnsafeCell<PortOutput>>),
+    Disconnected,
+}
+
+impl Default for PortInput {
+    fn default() -> Self {
+        Self::Disconnected
+    }
+}
+
+pub trait GetPortInput {
+    fn port(&self, input: usize, token: &ProcessToken) -> Option<Port<&Vector>>;
+}
+
+#[derive(new, Debug)]
+pub struct PortInputs {
+    pub(crate) inputs: Arc<Vec<Arc<SyncUnsafeCell<PortInput>>>>,
+}
+
+impl GetPortInput for PortInputs {
+    fn port(&self, input: usize, token: &ProcessToken) -> Option<Port<&Vector>> {
+        self.inputs
+            .get(input)
+            .map(|input| match unsafe { &(*input.get()) } {
+                PortInput::Connected(output) => match unsafe { &(*output.get()) } {
+                    PortOutput::Connected(_, vectors) => {
+                        Port::Connected(unsafe { vectors.get_unchecked(token.0) })
+                    }
+                    PortOutput::Disconnected => Port::Disconnected,
+                },
+                PortInput::Disconnected => Port::Disconnected,
+            })
+    }
+}
+
+pub trait GetPortInputs {
+    fn inputs(&self) -> PortInputs;
+}
+
+impl<T> GetPortInputs for T
+where
+    T: AsRef<Ports>,
+{
+    fn inputs(&self) -> PortInputs {
+        PortInputs::new(self.as_ref().input.clone())
+    }
+}
+
+#[derive(Builder, Debug)]
+#[builder(derive(Debug), on(String, into))]
+pub struct PortInputDefinition {
+    pub name: Option<String>,
+    pub description: Option<String>,
+}
+
+impl<S> From<PortInputDefinitionBuilder<S>> for PortInputDefinition
+where
+    S: port_input_definition_builder::IsComplete,
+{
+    fn from(builder: PortInputDefinitionBuilder<S>) -> PortInputDefinition {
+        builder.build()
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct InputRef(pub (Uuid, usize));
+pub struct PortInputReference(pub (Uuid, usize));
 
-impl InputRef {
+impl PortInputReference {
     #[must_use]
     pub fn instance_ref(&self) -> InstanceRef {
         InstanceRef(self.0.0)
     }
 }
 
-#[derive(Builder, Debug)]
-#[builder(derive(Debug), on(String, into))]
-pub struct InputDefinition {
-    pub name: Option<String>,
-    pub description: Option<String>,
-}
-
-impl<S> From<InputDefinitionBuilder<S>> for InputDefinition
-where
-    S: input_definition_builder::IsComplete,
-{
-    fn from(builder: InputDefinitionBuilder<S>) -> InputDefinition {
-        builder.build()
-    }
-}
+// -------------------------------------------------------------------------------------------------
 
 // Output
 
-#[derive(Debug, Default)]
-pub struct Output {
-    input: Option<Arc<SyncUnsafeCell<Input>>>,
-    vectors: [Vector; 2],
+#[derive(Debug)]
+pub enum PortOutput {
+    Connected(Arc<SyncUnsafeCell<PortInput>>, Box<[Vector; 2]>),
+    Disconnected,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct OutputRef(pub (Uuid, usize));
+impl Default for PortOutput {
+    fn default() -> Self {
+        Self::Disconnected
+    }
+}
 
-impl OutputRef {
-    #[must_use]
-    pub fn instance_ref(&self) -> InstanceRef {
-        InstanceRef(self.0.0)
+pub trait GetPortOutput {
+    fn port(&mut self, output: usize, token: &ProcessToken)
+    -> Option<Port<(&mut Vector, &Vector)>>;
+}
+
+#[derive(new, Debug)]
+pub struct PortOutputs {
+    pub(crate) outputs: Arc<Vec<Arc<SyncUnsafeCell<PortOutput>>>>,
+}
+
+impl GetPortOutput for PortOutputs {
+    fn port(
+        &mut self,
+        output: usize,
+        token: &ProcessToken,
+    ) -> Option<Port<(&mut Vector, &Vector)>> {
+        self.outputs
+            .get(output)
+            .map(|output| match unsafe { &mut (*output.get()) } {
+                PortOutput::Connected(_, vectors) => {
+                    let [current, previous] = unsafe {
+                        vectors.get_disjoint_unchecked_mut([token.0, usize::from(token.0 == 0)])
+                    };
+
+                    let current: &mut Vector = current;
+                    let previous: &Vector = previous;
+
+                    Port::Connected((current, previous))
+                }
+                PortOutput::Disconnected => Port::Disconnected,
+            })
+    }
+}
+
+pub trait GetPortOutputs {
+    fn outputs(&self) -> PortOutputs;
+}
+
+impl<T> GetPortOutputs for T
+where
+    T: AsRef<Ports>,
+{
+    fn outputs(&self) -> PortOutputs {
+        PortOutputs::new(self.as_ref().output.clone())
     }
 }
 
 #[derive(Builder, Debug)]
 #[builder(derive(Debug), on(String, into))]
-pub struct OutputDefinition {
+pub struct PortOutputDefinition {
     pub name: Option<String>,
     pub description: Option<String>,
 }
 
-impl<S> From<OutputDefinitionBuilder<S>> for OutputDefinition
+impl<S> From<PortOutputDefinitionBuilder<S>> for PortOutputDefinition
 where
-    S: output_definition_builder::IsComplete,
+    S: port_output_definition_builder::IsComplete,
 {
-    fn from(builder: OutputDefinitionBuilder<S>) -> OutputDefinition {
+    fn from(builder: PortOutputDefinitionBuilder<S>) -> PortOutputDefinition {
         builder.build()
     }
 }
 
-// -------------------------------------------------------------------------------------------------
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PortOutputReference(pub (Uuid, usize));
 
-// Connected
-
-pub trait GetConnected {
-    fn connected(&self) -> bool;
-}
-
-impl<P> GetConnected for Port<P>
-where
-    P: GetConnected,
-{
-    fn connected(&self) -> bool {
-        unsafe { (*self.0.get()).connected() }
-    }
-}
-
-impl GetConnected for Input {
-    fn connected(&self) -> bool {
-        self.output.is_some()
-    }
-}
-
-impl GetConnected for Output {
-    fn connected(&self) -> bool {
-        self.input.is_some()
-    }
-}
-
-// -------------------------------------------------------------------------------------------------
-
-// Vectors
-
-pub trait GetInputVector {
-    fn input_vector(&self, token: &ProcessToken) -> Option<&Vector>;
-}
-
-impl<P> GetInputVector for Port<P>
-where
-    P: GetInputVector,
-{
-    fn input_vector(&self, token: &ProcessToken) -> Option<&Vector> {
-        unsafe { (*self.0.get()).input_vector(token) }
-    }
-}
-
-impl GetInputVector for Input {
-    fn input_vector(&self, token: &ProcessToken) -> Option<&Vector> {
-        self.output
-            .as_ref()
-            .map(|output| unsafe { (*output.get()).output_vector(token) })
-    }
-}
-
-pub trait GetOutputVector {
-    fn output_vector(&self, token: &ProcessToken) -> &Vector;
-}
-
-impl<P> GetOutputVector for Port<P>
-where
-    P: GetOutputVector,
-{
-    fn output_vector(&self, token: &ProcessToken) -> &Vector {
-        unsafe { (*self.0.get()).output_vector(token) }
-    }
-}
-
-impl GetOutputVector for Output {
-    fn output_vector(&self, token: &ProcessToken) -> &Vector {
-        unsafe { self.vectors.get_unchecked(token.0) }
-    }
-}
-
-pub trait GetOutputVectorPrevious {
-    fn output_vector_previous(&self, token: &ProcessToken) -> &Vector;
-}
-
-impl<P> GetOutputVectorPrevious for Port<P>
-where
-    P: GetOutputVectorPrevious,
-{
-    fn output_vector_previous(&self, token: &ProcessToken) -> &Vector {
-        unsafe { (*self.0.get()).output_vector_previous(token) }
-    }
-}
-
-impl GetOutputVectorPrevious for Output {
-    fn output_vector_previous(&self, token: &ProcessToken) -> &Vector {
-        unsafe { self.vectors.get_unchecked(usize::from(token.0 == 0)) }
-    }
-}
-
-pub trait GetOutputVectorMut {
-    fn output_vector_mut(&mut self, token: &ProcessToken) -> &mut Vector;
-}
-
-impl<P> GetOutputVectorMut for Port<P>
-where
-    P: GetOutputVectorMut,
-{
-    fn output_vector_mut(&mut self, token: &ProcessToken) -> &mut Vector {
-        unsafe { (*self.0.get()).output_vector_mut(token) }
-    }
-}
-
-impl GetOutputVectorMut for Output {
-    fn output_vector_mut(&mut self, token: &ProcessToken) -> &mut Vector {
-        unsafe { self.vectors.get_unchecked_mut(token.0) }
+impl PortOutputReference {
+    #[must_use]
+    pub fn instance_ref(&self) -> InstanceRef {
+        InstanceRef(self.0.0)
     }
 }
 
@@ -220,29 +240,17 @@ impl GetOutputVectorMut for Output {
 // Connection
 
 pub(crate) trait Connect<P> {
-    fn connect(&mut self, other: &mut P);
+    fn connect(&self, other: &P);
 }
 
-impl Connect<Port<Output>> for Port<Input> {
-    fn connect(&mut self, output: &mut Port<Output>) {
+impl Connect<Arc<SyncUnsafeCell<PortInput>>> for Arc<SyncUnsafeCell<PortOutput>> {
+    fn connect(&self, input: &Arc<SyncUnsafeCell<PortInput>>) {
         unsafe {
-            (*self.0.get()).output = Some(output.0.clone());
+            (*self.get()) = PortOutput::Connected(input.clone(), Box::new([Vector::default(); 2]));
         }
 
         unsafe {
-            (*output.0.get()).input = Some(self.0.clone());
-        }
-    }
-}
-
-impl Connect<Port<Input>> for Port<Output> {
-    fn connect(&mut self, input: &mut Port<Input>) {
-        unsafe {
-            (*self.0.get()).input = Some(input.0.clone());
-        }
-
-        unsafe {
-            (*input.0.get()).output = Some(self.0.clone());
+            (*input.get()) = PortInput::Connected(self.clone());
         }
     }
 }
@@ -256,37 +264,37 @@ pub(crate) trait Disconnect {
     fn disconnect(&mut self);
 }
 
-impl<P> Disconnect for Port<P>
-where
-    P: Disconnect,
-{
-    fn disconnect(&mut self) {
-        unsafe {
-            (*self.0.get()).disconnect();
-        }
-    }
-}
+// impl<P> Disconnect for Port<P>
+// where
+//     P: Disconnect,
+// {
+//     fn disconnect(&mut self) {
+//         unsafe {
+//             (*self.0.get()).disconnect();
+//         }
+//     }
+// }
 
-impl Disconnect for Input {
-    fn disconnect(&mut self) {
-        if let Some(output) = self.output.as_ref() {
-            unsafe {
-                (*output.get()).input = None;
-            }
-        }
+// impl Disconnect for Input {
+//     fn disconnect(&mut self) {
+//         if let Self::Connected(output) = self {
+//             unsafe {
+//                 (*output.get()) = Output::Disconnected;
+//             }
+//         }
 
-        self.output = None;
-    }
-}
+//         *self = Self::Disconnected;
+//     }
+// }
 
-impl Disconnect for Output {
-    fn disconnect(&mut self) {
-        if let Some(input) = self.input.as_ref() {
-            unsafe {
-                (*input.get()).output = None;
-            }
-        }
+// impl Disconnect for Output {
+//     fn disconnect(&mut self) {
+//         if let Self::Connected(input, _) = self {
+//             unsafe {
+//                 (*input.get()) = Input::Disconnected;
+//             }
+//         }
 
-        self.input = None;
-    }
-}
+//         *self = Self::Disconnected;
+//     }
+// }

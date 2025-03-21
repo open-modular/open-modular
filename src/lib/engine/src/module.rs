@@ -1,14 +1,12 @@
 use bon::Builder;
 use uuid::Uuid;
 
-use crate::{
-    node::Node,
-    port::{
-        InputDefinition,
-        InputDefinitionBuilder,
-        OutputDefinition,
-        OutputDefinitionBuilder,
-    },
+use crate::port::{
+    PortInputDefinition,
+    PortInputDefinitionBuilder,
+    PortOutputDefinition,
+    PortOutputDefinitionBuilder,
+    Ports,
 };
 
 // =================================================================================================
@@ -17,8 +15,8 @@ use crate::{
 
 #[rustfmt::skip]
 pub trait Module:
-      AsMut<Node>
-    + AsRef<Node>
+      AsMut<Ports>
+    + AsRef<Ports>
     + Process
 {
 }
@@ -43,9 +41,9 @@ pub trait Define {
 #[builder(derive(Debug), on(String, into))]
 pub struct ModuleDefinition {
     #[builder(field)]
-    pub inputs: Vec<InputDefinition>,
+    pub inputs: Vec<PortInputDefinition>,
     #[builder(field)]
-    pub outputs: Vec<OutputDefinition>,
+    pub outputs: Vec<PortOutputDefinition>,
     pub name: String,
     pub description: Option<String>,
     pub usage: Option<String>,
@@ -57,10 +55,10 @@ where
 {
     pub fn with_input<F, I>(mut self, input: F) -> ModuleDefinitionBuilder<S>
     where
-        F: FnOnce(InputDefinitionBuilder) -> I,
-        I: Into<InputDefinition>,
+        F: FnOnce(PortInputDefinitionBuilder) -> I,
+        I: Into<PortInputDefinition>,
     {
-        let builder = InputDefinition::builder();
+        let builder = PortInputDefinition::builder();
         let definition = input(builder).into();
 
         self.inputs.push(definition);
@@ -69,10 +67,10 @@ where
 
     pub fn with_output<F, I>(mut self, output: F) -> ModuleDefinitionBuilder<S>
     where
-        F: FnOnce(OutputDefinitionBuilder) -> I,
-        I: Into<OutputDefinition>,
+        F: FnOnce(PortOutputDefinitionBuilder) -> I,
+        I: Into<PortOutputDefinition>,
     {
-        let builder = OutputDefinition::builder();
+        let builder = PortOutputDefinition::builder();
         let definition = output(builder).into();
 
         self.outputs.push(definition);
@@ -104,7 +102,7 @@ pub trait Identify {
 pub trait Instantiate {
     type Context;
 
-    fn instantiate(node: Node, runtime: Self::Context) -> Self;
+    fn instantiate(node: Ports, runtime: Self::Context) -> Self;
 }
 
 // -------------------------------------------------------------------------------------------------

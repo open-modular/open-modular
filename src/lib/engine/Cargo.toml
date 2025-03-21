@@ -1,5 +1,6 @@
 [dependencies]
 bon.workspace                        = true
+fancy_constructor.workspace          = true
 indexmap.workspace                   = true
 open-modular-core.workspace          = true
 open-modular-engine-macros.workspace = true

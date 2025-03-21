@@ -2,7 +2,6 @@
 
 pub mod context;
 pub mod module;
-pub mod node;
 pub mod port;
 pub mod processor;
 

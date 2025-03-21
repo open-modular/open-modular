@@ -14,13 +14,11 @@ use open_modular_engine::{
         ProcessArgs,
         module,
     },
-    node::{
-        GetInput as _,
-        Node,
-    },
     port::{
-        GetConnected as _,
-        GetInputVector,
+        GetPortInput,
+        GetPortInputs,
+        Port,
+        Ports,
     },
 };
 use open_modular_runtime::io::audio::{
@@ -48,7 +46,7 @@ pub struct Output<R>
 where
     R: Debug + GetAudio,
 {
-    node: Node,
+    ports: Ports,
     runtime: R,
     state: OutputState,
 }
@@ -73,13 +71,13 @@ where
 {
     type Context = R;
 
-    #[instrument(level = "debug", skip(node, context))]
-    fn instantiate(node: Node, context: Self::Context) -> Self {
+    #[instrument(level = "debug", skip(ports, context))]
+    fn instantiate(ports: Ports, context: Self::Context) -> Self {
         info!("instantiating audio output module, and setting state to await pending outputs");
 
         let state = OutputState::AwaitingOutputs(context.audio().outputs());
 
-        Self::new(node, context, state)
+        Self::new(ports, context, state)
     }
 }
 
@@ -89,6 +87,8 @@ where
 {
     #[instrument(level = "debug", skip(self))]
     fn process(&mut self, args: &ProcessArgs) {
+        let inputs = self.inputs();
+
         match &mut self.state {
             OutputState::Active(output_buffer) => {
                 let output_buffer = unsafe { &mut *output_buffer.0.get() };
@@ -97,12 +97,8 @@ where
                     .iter_mut()
                     .enumerate()
                     .for_each(|(i, output_vector)| {
-                        let input = self.input(i).expect("port to exist");
-
-                        if input.connected() {
-                            if let Some(input_vector) = input.input_vector(&args.token) {
-                                output_vector.clone_from(input_vector);
-                            }
+                        if let Some(Port::Connected(input)) = inputs.port(i, &args.token) {
+                            output_vector.clone_from(input);
                         }
                     });
             }

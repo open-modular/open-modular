@@ -26,14 +26,11 @@ use open_modular_engine::{
         ProcessArgs,
         module,
     },
-    node::{
-        GetOutput,
-        GetOutputMut,
-        Node,
-    },
     port::{
-        GetConnected as _,
-        GetOutputVectorMut as _,
+        GetPortOutput,
+        GetPortOutputs,
+        Port,
+        Ports,
     },
 };
 use tracing::instrument;
@@ -55,7 +52,7 @@ where
     scale: Vector,
     time: Vector,
 
-    node: Node,
+    ports: Ports,
     #[debug(skip)]
     #[new(default)]
     _r: PhantomData<R>,
@@ -79,8 +76,8 @@ where
 {
     type Context = R;
 
-    #[instrument(level = "debug", skip(node, _context))]
-    fn instantiate(node: Node, _context: Self::Context) -> Self {
+    #[instrument(level = "debug", skip(ports, _context))]
+    fn instantiate(ports: Ports, _context: Self::Context) -> Self {
         let factor = 440. * TAU;
         let increment = 1. / SAMPLE_RATE_F64;
 
@@ -95,7 +92,7 @@ where
         let scale = Vector::splat(0.15);
         let output = Vector::default();
 
-        Self::new(factor, increment, output, scale, time, node)
+        Self::new(factor, increment, output, scale, time, ports)
     }
 }
 
@@ -104,7 +101,9 @@ where
     R: Debug,
 {
     fn process(&mut self, args: &ProcessArgs) {
-        if unsafe { self.output_unchecked(0).connected() } {
+        let mut outputs = self.outputs();
+
+        if let Some(Port::Connected((output, _))) = outputs.port(0, &args.token) {
             self.time += self.increment;
 
             self.output = self.time;
@@ -112,9 +111,7 @@ where
             self.output = unsafe { simd::simd_fsin(self.output) };
             self.output *= self.scale;
 
-            unsafe {
-                *self.output_unchecked_mut(0).output_vector_mut(&args.token) = self.output;
-            }
+            *output = self.output;
         }
     }
 }

@@ -11,16 +11,13 @@ use open_modular_engine::{
         ProcessArgs,
         module,
     },
-    node::{
-        GetInput,
-        GetOutput as _,
-        GetOutputMut as _,
-        Node,
-    },
     port::{
-        GetConnected,
-        GetInputVector,
-        GetOutputVectorMut as _,
+        GetPortInput as _,
+        GetPortInputs as _,
+        GetPortOutput as _,
+        GetPortOutputs as _,
+        Port,
+        Ports,
     },
 };
 
@@ -32,7 +29,7 @@ use open_modular_engine::{
 #[derive(new, Debug)]
 #[new(vis())]
 pub struct Multiple<R> {
-    node: Node,
+    ports: Ports,
     #[new(default)]
     _r: PhantomData<R>,
 }
@@ -53,24 +50,22 @@ impl<R> Define for Multiple<R> {
 impl<R> Instantiate for Multiple<R> {
     type Context = R;
 
-    fn instantiate(node: Node, _context: Self::Context) -> Self {
-        Self::new(node)
+    fn instantiate(ports: Ports, _context: Self::Context) -> Self {
+        Self::new(ports)
     }
 }
 
 impl<R> Process for Multiple<R> {
     fn process(&mut self, args: &ProcessArgs) {
-        if unsafe { self.input_unchecked(0).connected() } {
-            (0..4).for_each(|i| {
-                if unsafe { self.output_unchecked(i).connected() } {
-                    unsafe {
-                        *self.output_unchecked_mut(i).output_vector_mut(&args.token) = *self
-                            .input_unchecked(0)
-                            .input_vector(&args.token)
-                            .expect("vector to exist");
-                    }
+        let inputs = self.inputs();
+        let mut outputs = self.outputs();
+
+        if let Some(Port::Connected(input)) = inputs.port(0, &args.token) {
+            for i in 0..4 {
+                if let Some(Port::Connected((output, _))) = outputs.port(i, &args.token) {
+                    *output = *input;
                 }
-            });
+            }
         }
     }
 }

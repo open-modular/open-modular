@@ -91,20 +91,20 @@ pub(crate) fn module_enum_tokens(args: &Args, item: &ItemEnum) -> TokenStream2 {
         mod #module {
             use super::*;
 
-            // AsMut<Connector<'rt>>
+            // AsMut<Ports>
 
-            impl #generics AsMut<::open_modular_engine::node::Node> for #ident #generics #where_clause {
-                fn as_mut(&mut self) -> &mut ::open_modular_engine::node::Node {
+            impl #generics AsMut<::open_modular_engine::port::Ports> for #ident #generics #where_clause {
+                fn as_mut(&mut self) -> &mut ::open_modular_engine::port::Ports {
                     match self {
                         #(Self::#variant(module) => module.as_mut()),*
                     }
                 }
             }
 
-            // AsRef<Connector<'rt>>
+            // AsRef<Ports>
 
-            impl #generics AsRef<::open_modular_engine::node::Node> for #ident #generics #where_clause {
-                fn as_ref(&self) -> & ::open_modular_engine::node::Node {
+            impl #generics AsRef<::open_modular_engine::port::Ports> for #ident #generics #where_clause {
+                fn as_ref(&self) -> & ::open_modular_engine::port::Ports {
                     match self {
                         #(Self::#variant(module) => module.as_ref()),*
                     }
@@ -146,9 +146,9 @@ pub(crate) fn module_enum_tokens(args: &Args, item: &ItemEnum) -> TokenStream2 {
                     let definition = definitions.get(id).unwrap();
                     let instantiations = Self::instantiations();
                     let instantiation = instantiations.get(id).unwrap();
-                    let node = ::open_modular_engine::node::Node::from_definition(definition);
+                    let ports = ::open_modular_engine::port::Ports::from_definition(definition);
 
-                    instantiation(node, context)
+                    instantiation(ports, context)
                 }
             }
 
@@ -196,7 +196,7 @@ pub(crate) fn module_enum_tokens(args: &Args, item: &ItemEnum) -> TokenStream2 {
                         ::std::collections::HashMap<
                             ::open_modular_engine::_dependencies::uuid::Uuid,
                             Box<dyn Fn(
-                                ::open_modular_engine::node::Node,
+                                ::open_modular_engine::port::Ports,
                                 #type_param,
                             ) -> #ident #generics>
                         >
@@ -208,16 +208,16 @@ pub(crate) fn module_enum_tokens(args: &Args, item: &ItemEnum) -> TokenStream2 {
                     #(
                         instantiations.insert(
                             <#variant::#generics as ::open_modular_engine::module::Identify>::id(),
-                            Box::new(|node, context| {
+                            Box::new(|ports, context| {
                                 #ident::#variant(
                                     <#variant::#generics as ::open_modular_engine::module::Instantiate>::instantiate(
-                                        node,
+                                        ports,
                                         context,
                                     )
                                 )
                             })
                             as Box<dyn Fn(
-                                ::open_modular_engine::node::Node,
+                                ::open_modular_engine::port::Ports,
                                 #type_param,
                             ) -> #ident #generics>
                         );

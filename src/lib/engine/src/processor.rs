@@ -15,16 +15,19 @@ use crate::{
         Module,
         ProcessArgs,
     },
-    node::{
-        GetInputMut as _,
-        GetOutputMut as _,
-    },
     port::{
+        // Connect as _,
         Connect as _,
         Disconnect as _,
-        InputRef,
-        OutputRef,
-        PortRef,
+        PortInputReference,
+        PortOutputReference,
+        PortReference,
+    },
+    port::{
+        GetPortInputs,
+        // GetInputMut as _,
+        // GetOutputMut as _,
+        GetPortOutputs,
     },
 };
 
@@ -65,59 +68,73 @@ impl<const C: usize, M> Processor<C, M>
 where
     M: Module,
 {
-    pub fn connect(&mut self, output_ref: &OutputRef, input_ref: &InputRef) {
-        let output = unsafe {
-            (*self
-                .instances
-                .get(&output_ref.0.0)
-                .expect("output instance to exist")
-                .get())
-            .output_mut(output_ref.0.1)
-            .expect("output port to exist")
-        };
+    pub fn connect(&mut self, output_ref: &PortOutputReference, input_ref: &PortInputReference) {
+        let output_instance = self
+            .instances
+            .get(&output_ref.0.0)
+            .expect("instance to exist");
 
-        let input = unsafe {
-            (*self
-                .instances
-                .get(&input_ref.0.0)
-                .expect("output instance to exist")
-                .get())
-            .input_mut(input_ref.0.1)
-            .expect("input port to exist")
-        };
+        let outputs = unsafe { (*output_instance.get()).outputs() };
+
+        let output = outputs
+            .outputs
+            .get(output_ref.0.1)
+            .expect("output to exist");
+
+        // let output = unsafe {
+        //     (*self
+        //         .instances
+        //         .get(&output_ref.0.0)
+        //         .expect("output instance to exist")
+        //         .get())
+        //     .output_mut(output_ref.0.1)
+        //     .expect("output port to exist")
+        // };
+
+        let input_instance = self
+            .instances
+            .get(&input_ref.0.0)
+            .expect("instance to exist");
+
+        let inputs = unsafe { (*input_instance.get()).inputs() };
+
+        let input = inputs
+            .inputs
+            .get(input_ref.0.1)
+            .expect("input port to exist");
 
         output.connect(input);
     }
 
-    pub fn disconnect(&mut self, port_ref: impl Into<PortRef>) {
-        match port_ref.into() {
-            PortRef::Input(input_ref) => {
-                let input = unsafe {
-                    (*self
-                        .instances
-                        .get(&input_ref.0.0)
-                        .expect("output instance to exist")
-                        .get())
-                    .input_mut(input_ref.0.1)
-                    .expect("input port to exist")
-                };
+    pub fn disconnect(&mut self, port_ref: impl Into<PortReference>) {
+        // match port_ref.into() {
+        //     PortRef::Input(input_ref) => {
+        //         let input = unsafe {
+        //             (*self
+        //                 .instances
+        //                 .get(&input_ref.0.0)
+        //                 .expect("output instance to exist")
+        //                 .get())
+        //             .input_mut(input_ref.0.1)
+        //             .expect("input port to exist")
+        //         };
 
-                input.disconnect();
-            }
-            PortRef::Output(output_ref) => {
-                let output = unsafe {
-                    (*self
-                        .instances
-                        .get(&output_ref.0.0)
-                        .expect("output instance to exist")
-                        .get())
-                    .output_mut(output_ref.0.1)
-                    .expect("output port to exist")
-                };
+        //         input.disconnect();
+        //     }
+        //     PortRef::Output(output_ref) => {
+        //         let output = unsafe {
+        //             (*self
+        //                 .instances
+        //                 .get(&output_ref.0.0)
+        //                 .expect("output instance to exist")
+        //                 .get())
+        //             .output_mut(output_ref.0.1)
+        //             .expect("output port to exist")
+        //         };
 
-                output.disconnect();
-            }
-        }
+        //         output.disconnect();
+        //     }
+        // }
     }
 }
 
@@ -154,12 +171,12 @@ pub struct InstanceRef(pub Uuid);
 
 impl InstanceRef {
     #[must_use]
-    pub fn input_ref(&self, input: usize) -> InputRef {
-        InputRef((self.0, input))
+    pub fn input_ref(&self, input: usize) -> PortInputReference {
+        PortInputReference((self.0, input))
     }
 
     #[must_use]
-    pub fn output_ref(&self, output: usize) -> OutputRef {
-        OutputRef((self.0, output))
+    pub fn output_ref(&self, output: usize) -> PortOutputReference {
+        PortOutputReference((self.0, output))
     }
 }
