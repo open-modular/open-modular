@@ -11,7 +11,10 @@ use crossbeam::channel::{
     Receiver,
 };
 use fancy_constructor::new;
-use open_modular_engine::module;
+use open_modular_engine::module::{
+    Module,
+    ModuleSource,
+};
 #[cfg(feature = "perf")]
 use open_modular_perf::timing::TimingAggregator;
 use open_modular_runtime::runtime;
@@ -59,8 +62,8 @@ use crate::{
 #[rustfmt::skip]
 pub trait RuntimeModule =
       Debug 
-    + module::Module
-    + module::ModuleSource<Context = <Runtime as runtime::Runtime>::Context>;
+    + Module
+    + ModuleSource<Context = <Runtime as runtime::Runtime>::Context>;
 
 // -------------------------------------------------------------------------------------------------
 

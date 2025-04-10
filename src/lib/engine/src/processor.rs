@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::{
     module::{
         Module,
-        ModuleInstanceReference,
+        ModuleReference,
     },
     port::{
         PortConnect as _,
@@ -22,7 +22,6 @@ use crate::{
         PortInputReference,
         PortOutputGet as _,
         PortOutputReference,
-        PortReference,
     },
 };
 
@@ -36,7 +35,7 @@ where
     M: Module,
 {
     args: ProcessArgs,
-    instances: IndexMap<Uuid, SyncUnsafeCell<M>>,
+    modules: IndexMap<Uuid, SyncUnsafeCell<M>>,
 }
 
 impl<M> Processor<M>
@@ -44,18 +43,18 @@ where
     M: Debug + Module,
 {
     #[instrument(level = "debug", skip(self))]
-    pub fn add(&mut self, key: Uuid, instance: M) -> ModuleInstanceReference {
-        trace!(?instance, "adding module");
+    pub fn add(&mut self, key: Uuid, module: M) -> ModuleReference {
+        trace!(?module, "adding module");
 
-        let instance = SyncUnsafeCell::new(instance);
+        let module = SyncUnsafeCell::new(module);
 
-        self.instances.insert(key, instance);
+        self.modules.insert(key, module);
 
-        ModuleInstanceReference::new(key)
+        ModuleReference::new(key)
     }
 
-    pub fn remove(&mut self, instance_ref: &ModuleInstanceReference) {
-        self.instances.swap_remove(&instance_ref.instance);
+    pub fn remove(&mut self, module_ref: &ModuleReference) {
+        self.modules.swap_remove(&module_ref.instance);
     }
 }
 
@@ -63,15 +62,30 @@ impl<M> Processor<M>
 where
     M: Module,
 {
-    pub fn connect(&mut self, output_ref: &PortOutputReference, input_ref: &PortInputReference) {
+    /// Connects two currently disconnected ports, an output to an input.
+    ///
+    /// # Panics
+    ///
+    /// Panics if either of the two ports cannot be found (either the instance
+    /// or the port index). Panics if either of the two ports is not currently
+    /// disconnected.
+    ///
+    /// # Safety
+    ///
+    /// .
+    pub unsafe fn connect(
+        &mut self,
+        output_ref: &PortOutputReference,
+        input_ref: &PortInputReference,
+    ) {
         let outputs = self
-            .instances
+            .modules
             .get(&output_ref.instance)
             .map(|instance| unsafe { (*instance.get()).as_mut() })
             .expect("output instance to exist");
 
         let inputs = self
-            .instances
+            .modules
             .get(&input_ref.instance)
             .map(|instance| unsafe { (*instance.get()).as_ref() })
             .expect("input instance to exist");
@@ -79,38 +93,32 @@ where
         let output = outputs.port(output_ref.port).expect("output port to exist");
         let input = inputs.port(input_ref.port).expect("input port to exist");
 
-        output.connect(input);
+        unsafe {
+            output.connect(input);
+        }
     }
 
-    pub fn disconnect(&mut self, port_ref: impl Into<PortReference>) {
-        // match port_ref.into() {
-        //     PortRef::Input(input_ref) => {
-        //         let input = unsafe {
-        //             (*self
-        //                 .instances
-        //                 .get(&input_ref.0.0)
-        //                 .expect("output instance to exist")
-        //                 .get())
-        //             .input_mut(input_ref.0.1)
-        //             .expect("input port to exist")
-        //         };
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics when...
+    ///
+    /// # Safety
+    ///
+    /// .
+    pub unsafe fn disconnect(&mut self, input_ref: &PortInputReference) {
+        let inputs = self
+            .modules
+            .get(&input_ref.instance)
+            .map(|instance| unsafe { (*instance.get()).as_ref() })
+            .expect("input instance to exist");
 
-        //         input.disconnect();
-        //     }
-        //     PortRef::Output(output_ref) => {
-        //         let output = unsafe {
-        //             (*self
-        //                 .instances
-        //                 .get(&output_ref.0.0)
-        //                 .expect("output instance to exist")
-        //                 .get())
-        //             .output_mut(output_ref.0.1)
-        //             .expect("output port to exist")
-        //         };
+        let input = inputs.port(input_ref.port).expect("input port to exist");
 
-        //         output.disconnect();
-        //     }
-        // }
+        unsafe {
+            input.disconnect();
+        }
     }
 }
 
@@ -120,7 +128,7 @@ where
 {
     pub fn process(&mut self, iteration: u64) {
         self.args.token.0 = (iteration % 2) as usize;
-        self.instances.values().for_each(|module| unsafe {
+        self.modules.values().for_each(|module| unsafe {
             (*module.get()).process(&self.args);
         });
     }
@@ -133,7 +141,7 @@ where
     fn default() -> Self {
         Self {
             args: ProcessArgs::default(),
-            instances: IndexMap::default(),
+            modules: IndexMap::default(),
         }
     }
 }

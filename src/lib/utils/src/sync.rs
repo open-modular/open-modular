@@ -36,7 +36,7 @@ impl BarrierGroup {
     pub fn barrier(&self) -> Barrier {
         self.0.data.lock().expect("lock to be obtained").active += 1;
 
-        Barrier::new(self.0.clone())
+        Barrier::new(Arc::clone(&self.0))
     }
 }
 
