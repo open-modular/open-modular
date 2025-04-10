@@ -3,18 +3,15 @@
 		"**/.git": true,
 		"**/.svn": true,
 		"**/.hg": true,
-		"**/CVS": true,
 		"**/.DS_Store": true,
 		"**/Thumbs.db": true,
 		"**/.cargo": true,
 		"**/.direnv": true,
 		"**/.envrc": true,
 		"**/.npm": true,
+		"**/CVS": true,
 		".github": true,
 		".vscode": true,
-		"**/*.lock": true,
-		"[!s]*/**": true,
-		"s[!r]*/**": true,
-		"sr[!c]*/**": true
+		"**/*.lock": true
 	}
 }
