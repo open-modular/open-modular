@@ -1,0 +1,93 @@
+[workspace]
+members = [
+    "crates/modules/gen",
+    "crates/modules/io",
+    "crates/modules/io/audio",
+    "crates/modules/util",
+    "crates/open-modular-core",
+    "crates/open-modular-engine",
+    "crates/open-modular-engine/open-modular-engine-macros",
+    "crates/open-modular-io",
+    "crates/open-modular-io/open-modular-io-audio",
+    "crates/open-modular-performance",
+    "crates/open-modular-runtime",
+    "crates/open-modular-runtime/open-modular-runtime-production",
+    "crates/open-modular-synchronization",
+    "crates/open-modular-utilities",
+]
+resolver = "2"
+
+[workspace.dependencies]
+
+# External
+
+bitflags           = "2"
+bon                = "3"
+convert_case       = "0.8"
+crossbeam          = "0.8"
+darling            = "0.20"
+derive_more        = { features = ["full"], version = "2" }
+fancy_constructor  = "2"
+indexmap           = "2.8"
+oneshot            = { default-features = false, features = ["std"], version = "0.1" }
+proc-macro2        = "1"
+quote              = "1"
+rtaudio-sys        = "0.3"
+syn                = "2"
+thread-priority    = "1"
+tracing            = { features = ["max_level_trace", "release_max_level_info"], version = "0.1" }
+tracing-subscriber = { features = ["env-filter"], version = "0.3" }
+uuid               = { features = ["v4"], version = "1" }
+
+# Workspace (Libraries)
+
+open-modular-core               = { path = "crates/open-modular-core" }
+open-modular-engine             = { path = "crates/open-modular-engine" }
+open-modular-engine-macros      = { path = "crates/open-modular-engine/open-modular-engine-macros" }
+open-modular-io                 = { path = "crates/open-modular-io" }
+open-modular-io-audio           = { path = "crates/open-modular-io/open-modular-io-audio" }
+open-modular-performance        = { path = "crates/open-modular-performance" }
+open-modular-runtime            = { path = "crates/open-modular-runtime" }
+open-modular-runtime-production = { path = "crates/open-modular-runtime/open-modular-runtime-production" }
+open-modular-synchronization    = { path = "crates/open-modular-synchronization" }
+open-modular-utilities          = { path = "crates/open-modular-utilities" }
+
+# Workspace (Modules)
+
+open-modular-module-gen      = { path = "crates/modules/gen" }
+open-modular-module-io       = { path = "crates/modules/io" }
+open-modular-module-io-audio = { path = "crates/modules/io/audio" }
+open-modular-module-util     = { path = "crates/modules/util" }
+
+[workspace.lints.clippy]
+cargo       = "warn"
+complexity  = "warn"
+correctness = "deny"
+pedantic    = "warn"
+perf        = "warn"
+restriction = "allow"
+style       = "warn"
+suspicious  = "warn"
+
+[workspace.lints.rust]
+deprecated_safe         = "warn"
+future_incompatible     = "warn"
+keyword_idents          = "warn"
+let_underscore          = "warn"
+nonstandard_style       = "warn"
+refining_impl_trait     = "warn"
+rust_2018_compatibility = "warn"
+rust_2018_idioms        = "warn"
+rust_2021_compatibility = "warn"
+rust_2024_compatibility = "warn"
+unused                  = "warn"
+
+[workspace.package]
+authors    = ["Andrew Cherry (@kolektiv)"]
+categories = ["multimedia", "multimedia::audio", "simulation"]
+edition    = "2024"
+keywords   = ["audio", "dsp", "modular", "synthesis"]
+license    = "AGPL-3.0-only"
+readme     = "README.md"
+repository = "https://github.com/open-modular/open-modular"
+version    = "0.1.0"

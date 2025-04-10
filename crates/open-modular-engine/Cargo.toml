@@ -1,0 +1,25 @@
+[dependencies]
+bon.workspace                        = true
+derive_more.workspace                = true
+fancy_constructor.workspace          = true
+indexmap.workspace                   = true
+open-modular-core.workspace          = true
+open-modular-engine-macros.workspace = true
+open-modular-utilities.workspace     = true
+tracing.workspace                    = true
+uuid.workspace                       = true
+
+[lints]
+workspace = true
+
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "Open Modular Engine"
+edition.workspace    = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "open-modular-engine"
+readme.workspace     = true
+repository.workspace = true
+version.workspace    = true

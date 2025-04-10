@@ -18,12 +18,12 @@ This repository (currently) contains everything related to Open Modular, so a qu
 
 | Directory | Content |
 | --------- | ------- |
-| [`/adr`](/adr) | Open Modular uses Architecture Decision Records (ADRs) to capture key choices made in the design and development of the project. These can be found in the [`/adr`](/adr) directory. The [`adrs`][1] tool for working with ADRs will work within this directory. See the `README.md` in [`/adr`](/adr) for more detail. |
-| [`/doc`](/doc) | Documentation which is not decision-related (not an ADR) can be found under the [`/doc`](/doc) directory. This is expected to be more "internal" documentation for developers, etc. rather than usage related, which will be more likely to end up in a wiki or other more documentation-oriented store. |
-| [`/env`](/env) | Environment configuration tools (currently a [`Nix`][2] flake for configuring a basic dev shell, used by the default [direnv][3] [`.envrc` file](.envrc)) is located in the [`/env`](/env) directory. |
-| [`/src`](/src) | Rust code (in the form of a multi-crate workspace) is contained in the [`/src`](/src) directory. When working with the Open Modular codebase, this should be considered the Rust "root" directory for CLI usage, etc. Cargo commands or other related actions will not work at higher levels. |
+| [`/documentation`](/documentation) | Documentation which is not decision-related (not an ADR) can be found under the [`/documentation`](/documentation) directory. This is expected to be more "internal" documentation for developers, etc. rather than usage related, which will be more likely to end up in a wiki or other more documentation-oriented store. |
+| [`/documentation/decisions`](/documentation/decisions) | Open Modular uses Architecture Decision Records (ADRs) to capture key choices made in the design and development of the project. These can be found in the [`decisions`](/documentation/decisions) directory. The [`adrs`][1] tool for working with ADRs will work within this directory. See the `README.md` in [`decisions`](/documentation/decisions) for more detail. |
+| [`/environment`](/environment) | Environment configuration tools (currently a [`Nix`][2] flake for configuring a basic dev shell, used by the default [direnv][3] [`.envrc` file](.envrc)) is located in the [`/environment`](/environment) directory. |
+| [`/crates`](/crates) | Rust code (in the form of a multi-crate workspace) is contained in the [`/crates`](/crates) directory. When working with the Open Modular codebase, this should be considered the Rust "root" directory for CLI usage, etc. Cargo commands or other related actions will not work at higher levels. |
 
-In general, most significant locations in the repository will contain their own `README.md` file which will give more specific detail and explanation on content and usage. This includes specific crates within the [`/src`](/src) directory, which should all give clear expectations on their scope and implementation approaches (and potentially links to any ADRs which apply).
+In general, most significant locations in the repository will contain their own `README.md` file which will give more specific detail and explanation on content and usage. This includes specific crates within the [`/crates`](/crates) directory, which should all give clear expectations on their scope and implementation approaches (and potentially links to any ADRs which apply).
 
 [0]: https://www.rust-lang.org/
 [1]: https://github.com/joshrotenberg/adrs
