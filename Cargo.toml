@@ -1,20 +1,5 @@
 [workspace]
-members = [
-    "crates/modules/gen",
-    "crates/modules/io",
-    "crates/modules/io/audio",
-    "crates/modules/util",
-    "crates/open-modular-core",
-    "crates/open-modular-engine",
-    "crates/open-modular-engine/open-modular-engine-macros",
-    "crates/open-modular-io",
-    "crates/open-modular-io/open-modular-io-audio",
-    "crates/open-modular-performance",
-    "crates/open-modular-runtime",
-    "crates/open-modular-runtime/open-modular-runtime-production",
-    "crates/open-modular-synchronization",
-    "crates/open-modular-utilities",
-]
+members  = ["crates/core/*", "crates/modules/*"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -41,23 +26,23 @@ uuid               = { features = ["v4"], version = "1" }
 
 # Workspace (Libraries)
 
-open-modular-core               = { path = "crates/open-modular-core" }
-open-modular-engine             = { path = "crates/open-modular-engine" }
-open-modular-engine-macros      = { path = "crates/open-modular-engine/open-modular-engine-macros" }
-open-modular-io                 = { path = "crates/open-modular-io" }
-open-modular-io-audio           = { path = "crates/open-modular-io/open-modular-io-audio" }
-open-modular-performance        = { path = "crates/open-modular-performance" }
-open-modular-runtime            = { path = "crates/open-modular-runtime" }
-open-modular-runtime-production = { path = "crates/open-modular-runtime/open-modular-runtime-production" }
-open-modular-synchronization    = { path = "crates/open-modular-synchronization" }
-open-modular-utilities          = { path = "crates/open-modular-utilities" }
+open-modular-core               = { path = "crates/core/open-modular-core" }
+open-modular-engine             = { path = "crates/core/open-modular-engine" }
+open-modular-engine-macros      = { path = "crates/core/open-modular-engine-macros" }
+open-modular-io                 = { path = "crates/core/open-modular-io" }
+open-modular-io-audio           = { path = "crates/core/open-modular-io-audio" }
+open-modular-performance        = { path = "crates/core/open-modular-performance" }
+open-modular-runtime            = { path = "crates/core/open-modular-runtime" }
+open-modular-runtime-production = { path = "crates/core/open-modular-runtime-production" }
+open-modular-synchronization    = { path = "crates/core/open-modular-synchronization" }
+open-modular-utilities          = { path = "crates/core/open-modular-utilities" }
 
 # Workspace (Modules)
 
-open-modular-module-gen      = { path = "crates/modules/gen" }
-open-modular-module-io       = { path = "crates/modules/io" }
-open-modular-module-io-audio = { path = "crates/modules/io/audio" }
-open-modular-module-util     = { path = "crates/modules/util" }
+open-modular-modules-generators = { path = "crates/modules/open-modular-modules-generator" }
+open-modular-modules-io         = { path = "crates/modules/open-modular-modules-io" }
+open-modular-modules-io-audio   = { path = "crates/modules/open-modular-modules-io-audio" }
+open-modular-modules-utilities  = { path = "crates/modules/open-modular-modules-utilities" }
 
 [workspace.lints.clippy]
 cargo       = "warn"

@@ -1,6 +1,9 @@
 [dependencies]
+derive_more.workspace         = true
 fancy_constructor.workspace   = true
+open-modular-core.workspace   = true
 open-modular-engine.workspace = true
+tracing.workspace             = true
 
 [lints]
 workspace = true
@@ -8,11 +11,11 @@ workspace = true
 [package]
 authors.workspace    = true
 categories.workspace = true
-description          = "Open Modular Module - Utility"
+description          = "Open Modular Modules - Generator"
 edition.workspace    = true
 keywords.workspace   = true
 license.workspace    = true
-name                 = "open-modular-module-util"
+name                 = "open-modular-modules-generators"
 readme.workspace     = true
 repository.workspace = true
 version.workspace    = true

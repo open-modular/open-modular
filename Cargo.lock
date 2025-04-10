@@ -370,7 +370,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "open-modular-module-gen"
+name = "open-modular-modules-generators"
 version = "0.1.0"
 dependencies = [
  "derive_more",
@@ -381,14 +381,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "open-modular-module-io"
+name = "open-modular-modules-io"
 version = "0.1.0"
 dependencies = [
- "open-modular-module-io-audio",
+ "open-modular-modules-io-audio",
 ]
 
 [[package]]
-name = "open-modular-module-io-audio"
+name = "open-modular-modules-io-audio"
 version = "0.1.0"
 dependencies = [
  "derive_more",
@@ -401,7 +401,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "open-modular-module-util"
+name = "open-modular-modules-utilities"
 version = "0.1.0"
 dependencies = [
  "fancy_constructor",

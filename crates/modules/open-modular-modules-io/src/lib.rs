@@ -5,5 +5,5 @@
 // Re-Export
 
 pub mod audio {
-    pub use open_modular_module_io_audio::*;
+    pub use open_modular_modules_io_audio::*;
 }

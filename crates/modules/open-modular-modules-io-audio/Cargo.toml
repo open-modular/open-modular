@@ -13,11 +13,11 @@ workspace = true
 [package]
 authors.workspace    = true
 categories.workspace = true
-description          = "Open Modular Module - IO - Audio"
+description          = "Open Modular Modules - IO - Audio"
 edition.workspace    = true
 keywords.workspace   = true
 license.workspace    = true
-name                 = "open-modular-module-io-audio"
+name                 = "open-modular-modules-io-audio"
 readme.workspace     = true
 repository.workspace = true
 version.workspace    = true

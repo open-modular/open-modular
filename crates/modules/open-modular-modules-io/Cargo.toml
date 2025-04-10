@@ -1,5 +1,5 @@
 [dependencies]
-open-modular-module-io-audio.workspace = true
+open-modular-modules-io-audio.workspace = true
 
 [lints]
 workspace = true
@@ -7,11 +7,11 @@ workspace = true
 [package]
 authors.workspace    = true
 categories.workspace = true
-description          = "Open Modular Module - IO"
+description          = "Open Modular Modules - IO"
 edition.workspace    = true
 keywords.workspace   = true
 license.workspace    = true
-name                 = "open-modular-module-io"
+name                 = "open-modular-modules-io"
 readme.workspace     = true
 repository.workspace = true
 version.workspace    = true
