@@ -44,6 +44,7 @@
           devShells.default = mkShell {
             buildInputs = [
               cmake
+              gnuplot
               rust
             ];
 

@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/core/*", "crates/modules/*"]
+members  = ["benches/*", "crates/core/*", "crates/modules/*"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -9,6 +9,7 @@ resolver = "2"
 bitflags           = "2"
 bon                = "3"
 convert_case       = "0.8"
+criterion          = { version = "0.5", features = ["html_reports"] }
 crossbeam          = "0.8"
 darling            = "0.20"
 derive_more        = { features = ["full"], version = "2" }
@@ -24,7 +25,7 @@ tracing            = { features = ["max_level_trace", "release_max_level_info"],
 tracing-subscriber = { features = ["env-filter"], version = "0.3" }
 uuid               = { features = ["v4"], version = "1" }
 
-# Workspace (Libraries)
+# Workspace (Core)
 
 open-modular-core               = { path = "crates/core/open-modular-core" }
 open-modular-engine             = { path = "crates/core/open-modular-engine" }
@@ -39,7 +40,7 @@ open-modular-utilities          = { path = "crates/core/open-modular-utilities" 
 
 # Workspace (Modules)
 
-open-modular-modules-generators = { path = "crates/modules/open-modular-modules-generator" }
+open-modular-modules-generators = { path = "crates/modules/open-modular-modules-generators" }
 open-modular-modules-io         = { path = "crates/modules/open-modular-modules-io" }
 open-modular-modules-io-audio   = { path = "crates/modules/open-modular-modules-io-audio" }
 open-modular-modules-utilities  = { path = "crates/modules/open-modular-modules-utilities" }

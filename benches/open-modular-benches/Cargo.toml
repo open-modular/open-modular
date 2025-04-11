@@ -1,0 +1,27 @@
+[[bench]]
+harness = false
+name    = "engine"
+
+[dependencies]
+
+[dev-dependencies]
+criterion.workspace                       = true
+open-modular-engine.workspace             = true
+open-modular-modules-generators.workspace = true
+open-modular-modules-io.workspace         = true
+open-modular-modules-utilities.workspace  = true
+uuid.workspace                            = true
+
+[lints]
+workspace = true
+
+[package]
+authors.workspace    = true
+categories.workspace = true
+edition.workspace    = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "open-modular-benches"
+readme.workspace     = true
+repository.workspace = true
+version.workspace    = true
