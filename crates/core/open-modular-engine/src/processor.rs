@@ -4,10 +4,6 @@ use std::{
 };
 
 use indexmap::IndexMap;
-use tracing::{
-    instrument,
-    trace,
-};
 use uuid::Uuid;
 
 use crate::{
@@ -42,10 +38,7 @@ impl<M> Processor<M>
 where
     M: Debug + Module,
 {
-    #[instrument(level = "debug", skip(self))]
     pub fn add(&mut self, key: Uuid, module: M) -> ModuleReference {
-        trace!(?module, "adding module");
-
         let module = SyncUnsafeCell::new(module);
 
         self.modules.insert(key, module);

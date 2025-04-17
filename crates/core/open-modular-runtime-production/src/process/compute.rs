@@ -19,12 +19,6 @@ use open_modular_synchronization::{
     barrier::Barriers,
     control::Exit,
 };
-use tracing::{
-    Level,
-    debug,
-    info,
-    instrument,
-};
 use uuid::Uuid;
 
 use crate::runtime::{
@@ -81,11 +75,8 @@ impl<M> Process for Compute<'_, M>
 where
     M: RuntimeModule,
 {
-    #[instrument(level = Level::TRACE, skip(self), ret)]
     fn configure(&mut self) -> ProcessControl {
         INIT.call_once(|| {
-            info!("configuring processor on first run");
-
             let sine_id = Uuid::from_str("f75487a4-7847-43f9-ab47-71bd6acfb78d").unwrap();
             let sine = M::get(&sine_id, self.context.clone());
             let sine_ref = self.processor.add(sine_id, sine);
@@ -112,15 +103,12 @@ where
         });
 
         if self.exit.triggered() {
-            debug!(action = "break", sync = "exit");
-
             return ProcessControl::Exit;
         }
 
         ProcessControl::Continue
     }
 
-    #[instrument(level = Level::TRACE, skip(self))]
     fn compute(&mut self) {
         #[cfg(feature = "perf")]
         self.timing_collector.enter();

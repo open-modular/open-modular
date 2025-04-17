@@ -3,7 +3,6 @@ derive_more.workspace         = true
 fancy_constructor.workspace   = true
 open-modular-core.workspace   = true
 open-modular-engine.workspace = true
-tracing.workspace             = true
 
 [lints]
 workspace = true

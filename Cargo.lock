@@ -557,7 +557,6 @@ dependencies = [
  "open-modular-core",
  "open-modular-engine-macros",
  "open-modular-utilities",
- "tracing",
  "uuid",
 ]
 
@@ -590,7 +589,6 @@ dependencies = [
  "fancy_constructor",
  "open-modular-core",
  "rtaudio-sys",
- "tracing",
 ]
 
 [[package]]
@@ -601,7 +599,6 @@ dependencies = [
  "fancy_constructor",
  "open-modular-core",
  "open-modular-engine",
- "tracing",
 ]
 
 [[package]]
@@ -621,7 +618,6 @@ dependencies = [
  "open-modular-engine",
  "open-modular-runtime",
  "open-modular-utilities",
- "tracing",
 ]
 
 [[package]]
@@ -639,7 +635,6 @@ dependencies = [
  "crossbeam",
  "derive_more",
  "fancy_constructor",
- "tracing",
 ]
 
 [[package]]
@@ -672,7 +667,6 @@ dependencies = [
  "open-modular-synchronization",
  "open-modular-utilities",
  "thread-priority",
- "tracing",
  "uuid",
 ]
 
@@ -696,14 +690,7 @@ dependencies = [
  "fancy_constructor",
  "oneshot",
  "thread-priority",
- "tracing",
 ]
-
-[[package]]
-name = "pin-project-lite"
-version = "0.2.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b3cff922bd51709b605d9ead9aa71031d81447142d828eb4a6eba76fe619f9b"
 
 [[package]]
 name = "pkg-config"
@@ -941,37 +928,6 @@ checksum = "be4d6b5f19ff7664e8c98d03e2139cb510db9b0a60b55f8e8709b689d939b6bc"
 dependencies = [
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "tracing"
-version = "0.1.41"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "784e0ac535deb450455cbfa28a6f0df145ea1bb7ae51b821cf5e7927fdcfbdd0"
-dependencies = [
- "pin-project-lite",
- "tracing-attributes",
- "tracing-core",
-]
-
-[[package]]
-name = "tracing-attributes"
-version = "0.1.28"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "395ae124c09f9e6918a2310af6038fba074bcf474ac352496d5910dd59a2226d"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "tracing-core"
-version = "0.1.33"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e672c95779cf947c5311f83787af4fa8fffd12fb27e4993211a84bdfd9610f9c"
-dependencies = [
- "once_cell",
 ]
 
 [[package]]

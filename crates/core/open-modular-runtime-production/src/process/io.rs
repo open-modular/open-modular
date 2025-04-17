@@ -22,11 +22,6 @@ use open_modular_synchronization::{
     control::Exit,
     time::Timer,
 };
-use tracing::{
-    Level,
-    debug,
-    instrument,
-};
 
 use crate::{
     process::io::audio::{
@@ -77,7 +72,6 @@ impl AsMut<Barriers> for Io<'_> {
 }
 
 impl Process for Io<'_> {
-    #[instrument(level = Level::TRACE, skip(self))]
     fn configure(&mut self) -> ProcessControl {
         self.audio_timer.reset();
 
@@ -85,8 +79,6 @@ impl Process for Io<'_> {
         self.timing_collector.enter();
 
         if self.exit.triggered() {
-            debug!(action = "break", sync = "exit");
-
             return ProcessControl::Exit;
         }
 
@@ -95,14 +87,6 @@ impl Process for Io<'_> {
         if let Ok(protocol) = self.audio_receiver.try_recv() {
             match protocol {
                 AudioProtocol::GetOutputBuffer(id, output_buffer_value) => {
-                    debug!(
-                        action = "handle",
-                        correlation = output_buffer_value.correlation,
-                        protocol = "audio",
-                        variant = "get_output_buffer",
-                        id,
-                    );
-
                     let barriers = self.barrier_groups.barriers();
 
                     #[cfg(feature = "perf")]
@@ -121,13 +105,6 @@ impl Process for Io<'_> {
                     output_buffer_value.set(output_buffer);
                 }
                 AudioProtocol::GetOutputs(outputs_value) => {
-                    debug!(
-                        action = "handle",
-                        correlation = outputs_value.correlation,
-                        protocol = "audio",
-                        variant = "get_outputs",
-                    );
-
                     let outputs = self.audio_controller.outputs();
 
                     outputs_value.set(outputs);
@@ -141,7 +118,6 @@ impl Process for Io<'_> {
         ProcessControl::Continue
     }
 
-    #[instrument(level = Level::TRACE, skip(self))]
     fn io(&mut self) {
         if !self.audio_controller.is_active() {
             self.audio_timer.wait();

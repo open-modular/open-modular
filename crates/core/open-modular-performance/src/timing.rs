@@ -10,12 +10,6 @@ use crossbeam::channel::{
 };
 use derive_more::with_trait::Debug;
 use fancy_constructor::new;
-use tracing::{
-    Level,
-    info,
-    instrument,
-    warn,
-};
 
 // =================================================================================================
 // Timing
@@ -54,7 +48,6 @@ pub struct TimingCollector {
 }
 
 impl TimingCollector {
-    #[instrument(level = Level::TRACE)]
     pub fn enter(&mut self) {
         if self.sample_iteration == self.sample_interval - 1 {
             self.sample_iteration = 0;
@@ -64,7 +57,6 @@ impl TimingCollector {
         }
     }
 
-    #[instrument(level = Level::TRACE)]
     pub fn exit(&mut self) {
         if self.sample_iteration == 0 {
             self.accumulator += self.initiator.elapsed();
@@ -73,7 +65,8 @@ impl TimingCollector {
                 let timing = Timing::new(self.accumulator, self.reporting_interval, &self.name);
 
                 if let Err(err) = self.sender.try_send(timing) {
-                    warn!(?err, name = self.name, "timing data send error");
+                    // log::warn!(err:?, name = self.name; "timing data send
+                    // error");
                 }
 
                 self.accumulator = Duration::default();
@@ -99,7 +92,6 @@ pub struct TimingAggregator {
 }
 
 impl TimingAggregator {
-    #[instrument(level = Level::DEBUG, skip(self, name), ret)]
     pub fn collector(
         &self,
         name: impl Into<String>,
@@ -116,12 +108,11 @@ impl TimingAggregator {
 }
 
 impl TimingAggregator {
-    #[instrument(level = Level::TRACE, skip(self))]
     pub fn process(&self) {
         if let Ok(timing) = self.channels.1.recv_timeout(self.timeout) {
             let average = timing.duration / timing.iterations;
 
-            info!(?average, name = timing.name, "calculated timing");
+            println!("average timing: {average:?}");
         }
     }
 }

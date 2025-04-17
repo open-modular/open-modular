@@ -10,7 +10,6 @@ open-modular-runtime.workspace         = true
 open-modular-synchronization.workspace = true
 open-modular-utilities.workspace       = true
 thread-priority.workspace              = true
-tracing.workspace                      = true
 uuid.workspace                         = true
 
 [features]

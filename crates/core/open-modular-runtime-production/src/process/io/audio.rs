@@ -40,12 +40,6 @@ use open_modular_utilities::sync::{
     Pending,
     Value,
 };
-use tracing::{
-    debug,
-    instrument,
-    trace,
-    warn,
-};
 
 // =================================================================================================
 // Audio
@@ -77,16 +71,8 @@ pub struct AudioContext {
 impl Audio for AudioContext {}
 
 impl GetAudioOutputs for AudioContext {
-    #[instrument(level = "debug", skip(self))]
     fn outputs(&self) -> Pending<Vec<AudioOutput>> {
         let (value, pending) = Pending::create();
-
-        debug!(
-            action = "send",
-            correlation = value.correlation,
-            protocol = "audio",
-            variant = "get_outputs",
-        );
 
         self.sender
             .try_send(AudioProtocol::GetOutputs(value))
@@ -97,17 +83,8 @@ impl GetAudioOutputs for AudioContext {
 }
 
 impl GetAudioOutputBuffer for AudioContext {
-    #[instrument(level = "debug", skip(self))]
     fn output_buffer(&self, id: u32) -> Pending<AudioOutputBuffer> {
         let (value, pending) = Pending::create();
-
-        debug!(
-            action = "send",
-            correlation = value.correlation,
-            protocol = "audio",
-            variant = "get_output_buffer",
-            id,
-        );
 
         self.sender
             .try_send(AudioProtocol::GetOutputBuffer(id, value))
@@ -143,7 +120,6 @@ impl AudioController {
 
 impl AudioController {
     #[allow(clippy::manual_let_else, clippy::single_match_else, unused_mut)]
-    #[instrument(level = "debug", skip(self, barriers), ret)]
     pub fn output_buffer(
         &mut self,
         mut barriers: Barriers,
@@ -153,18 +129,9 @@ impl AudioController {
         let device = self.host.device(id);
         let channels = device.channels.output;
 
-        debug!(
-            action = "get_output_buffer",
-            io = "audio",
-            runtime = "production",
-            ?device
-        );
-
         let output = match self.outputs.get_mut(&id) {
             Some(output) => output,
             None => {
-                trace!(id, "no output stream for id, activating new stream");
-
                 let api = self.host.api();
                 let buffers = AudioBufferWeakMap::default();
                 let parameters = StreamParameters::for_device(id).channels(channels);
@@ -172,8 +139,6 @@ impl AudioController {
                 // Create and activate a new Stream, with a callback function which will utilize
                 // the shared buffers that will be handed out to consumers of the audio
                 // capability.
-
-                trace!(?api, ?parameters, "creating and activating output stream");
 
                 let stream = Stream::output(api, parameters).activate({
                     let buffers = buffers.clone();
@@ -191,8 +156,8 @@ impl AudioController {
 
                     move |data, info| {
                         match info.status {
-                            StreamStatus::Overflow => warn!("output stream overflow"),
-                            StreamStatus::Underflow => warn!("output stream underflow"),
+                            StreamStatus::Overflow => println!("output stream overflow"),
+                            StreamStatus::Underflow => println!("output stream underflow"),
                             _ => {}
                         }
 
@@ -273,8 +238,6 @@ impl AudioController {
                 // Create a new audio output stream and add it to the map of active streams.
                 // Return a mutable reference to the stream that was added.
 
-                trace!("storing new output stream");
-
                 let output = AudioOutputStream::new(buffers, stream);
 
                 self.outputs.insert(id, output);
@@ -286,12 +249,8 @@ impl AudioController {
         // Create a new external buffer, and add a aeak reference to it to the active
         // stream.
 
-        trace!("creating new output buffer");
-
         let buffer = AudioOutputBuffer::new(channels);
         let buffer_weak = AudioBufferWeak::from_buffer(&buffer);
-
-        trace!(?buffer_weak, "adding weak output buffer to output stream");
 
         unsafe {
             (*output.buffers.0.get()).push(buffer_weak);
@@ -300,15 +259,10 @@ impl AudioController {
         // Return the original buffer. When this buffer is dropped, the local weak
         // reference will be collected as part of the general processing pattern.
 
-        trace!(?buffer, "returning output buffer");
-
         buffer
     }
 
-    #[instrument(level = "debug", skip(self), ret)]
     pub fn outputs(&self) -> Vec<AudioOutput> {
-        debug!(action = "get_outputs", io = "audio", runtime = "production",);
-
         self.host
             .devices()
             .output()

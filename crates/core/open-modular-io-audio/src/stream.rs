@@ -14,8 +14,8 @@ use bon::Builder;
 use derive_more::Debug;
 use fancy_constructor::new;
 use open_modular_core::{
-    BUFFER_FRAMES_U32,
-    SAMPLE_RATE_U32,
+    BUFFER_FRAMES,
+    SAMPLE_RATE,
 };
 use rtaudio_sys::{
     MAX_NAME_LENGTH,
@@ -99,7 +99,7 @@ impl Stream<StreamUnspecified, StreamAny> {
         let mut context = Box::pin(StreamOutputContext::new(info));
         let context_ptr: *mut StreamOutputContext = &mut *context;
 
-        let mut buffer_frames = BUFFER_FRAMES_U32;
+        let mut buffer_frames = u32::try_from(BUFFER_FRAMES).expect("invalid buffer size");
 
         let userdata = context_ptr.cast::<c_void>();
 
@@ -115,7 +115,7 @@ impl Stream<StreamUnspecified, StreamAny> {
                 output,
                 ptr::null_mut(),
                 RTAUDIO_FORMAT_FLOAT32,
-                SAMPLE_RATE_U32,
+                u32::try_from(SAMPLE_RATE).expect("invalid sample rate"),
                 &mut buffer_frames,
                 Some(stream_output_callback),
                 userdata,
@@ -267,7 +267,7 @@ pub struct StreamInfo {
 
 #[derive(new, Clone, Debug)]
 pub struct StreamBuffersInfo {
-    #[new(val = BUFFER_FRAMES_U32)]
+    #[new(val = u32::try_from(BUFFER_FRAMES).expect("invalid buffer size"))]
     pub frames: u32,
     #[new(default)]
     pub interleaved: bool,
@@ -283,7 +283,8 @@ pub struct StreamChannelsInfo {
 pub struct StreamSamplesInfo {
     #[new(val = RTAUDIO_FORMAT_FLOAT32)]
     pub format: u64,
-    #[new(val = SAMPLE_RATE_U32)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[new(val = u32::try_from(SAMPLE_RATE).expect("invalid sample rate"))]
     pub rate: u32,
 }
 

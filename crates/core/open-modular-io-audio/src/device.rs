@@ -5,9 +5,9 @@ use std::{
 
 use fancy_constructor::new;
 use open_modular_core::{
-    MAX_CHANNELS_U32,
-    MIN_CHANNELS_U32,
-    SAMPLE_RATE_U32,
+    MAX_CHANNELS,
+    MIN_CHANNELS,
+    SAMPLE_RATE,
 };
 use rtaudio_sys::{
     RTAUDIO_FORMAT_FLOAT32,
@@ -91,9 +91,15 @@ impl From<rtaudio_device_info> for DeviceInfo {
         // count, which is then used to determine buffer sizes, etc.
 
         let channels = DeviceChannelsInfo::new(
-            device_info.duplex_channels.min(MAX_CHANNELS_U32),
-            device_info.input_channels.min(MAX_CHANNELS_U32),
-            device_info.output_channels.min(MAX_CHANNELS_U32),
+            device_info
+                .duplex_channels
+                .min(u32::try_from(MAX_CHANNELS).expect("invalid channel maximum")),
+            device_info
+                .input_channels
+                .min(u32::try_from(MAX_CHANNELS).expect("invalid channel maximum")),
+            device_info
+                .output_channels
+                .min(u32::try_from(MAX_CHANNELS).expect("invalid channel maximum")),
         );
 
         let defaults = DeviceDefaultsInfo::new(
@@ -195,13 +201,16 @@ where
     T: Iterator<Item = DeviceInfo>,
 {
     fn output(self) -> impl Iterator<Item = DeviceInfo> {
-        self.filter(|device_info| device_info.channels.output >= MIN_CHANNELS_U32)
-            .filter(|device_info| device_info.formats.contains(DeviceFormatsInfo::F32))
-            .filter(|device_info| {
-                device_info
-                    .sample_rates
-                    .available
-                    .contains(&SAMPLE_RATE_U32)
-            })
+        self.filter(|device_info| {
+            device_info.channels.output
+                >= u32::try_from(MIN_CHANNELS).expect("invalid channel minimum")
+        })
+        .filter(|device_info| device_info.formats.contains(DeviceFormatsInfo::F32))
+        .filter(|device_info| {
+            device_info
+                .sample_rates
+                .available
+                .contains(&u32::try_from(SAMPLE_RATE).expect("invalid sample rate"))
+        })
     }
 }

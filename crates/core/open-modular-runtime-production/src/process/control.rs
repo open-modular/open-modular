@@ -7,10 +7,6 @@ use std::{
 
 use fancy_constructor::new;
 use open_modular_synchronization::control::Exit;
-use tracing::{
-    Level,
-    instrument,
-};
 
 use crate::runtime::Runtime;
 
@@ -28,18 +24,14 @@ pub struct Control<'rt> {
 }
 
 impl<'rt> Control<'rt> {
-    #[instrument(level = Level::DEBUG, skip(runtime))]
     pub fn spawn(runtime: &'rt Runtime) {
         Self::new(runtime).process();
     }
 }
 
 impl Control<'_> {
-    #[instrument(level = Level::DEBUG, skip(self))]
     fn process(&mut self) {
         thread::sleep(Duration::from_secs(5));
-
-        tracing::debug!(action = "trigger", sync = "exit",);
 
         self.exit.trigger();
     }

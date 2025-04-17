@@ -11,9 +11,8 @@ use std::{
 use derive_more::with_trait::Debug;
 use fancy_constructor::new;
 use open_modular_core::{
-    BUFFER_FRAMES_F64,
-    BUFFER_FRAMES_U32,
-    SAMPLE_RATE_F64,
+    BUFFER_FRAMES,
+    SAMPLE_RATE,
     Vector,
 };
 use open_modular_engine::{
@@ -35,7 +34,6 @@ use open_modular_engine::{
         ProcessArgs,
     },
 };
-use tracing::instrument;
 
 // =================================================================================================
 // Oscillator
@@ -79,23 +77,23 @@ where
 {
     type Context = R;
 
-    #[instrument(level = "debug", skip(_context, port_inputs, port_outputs))]
+    #[allow(clippy::cast_precision_loss)]
     fn instantiate(
         _context: Self::Context,
         port_inputs: PortInputs,
         port_outputs: PortOutputs,
     ) -> Self {
         let factor = 440. * TAU;
-        let increment = 1. / SAMPLE_RATE_F64;
+        let increment = 1. / SAMPLE_RATE as f64;
 
         let time = Vector::from_slice(
-            &(0..BUFFER_FRAMES_U32)
+            &(0..u32::try_from(BUFFER_FRAMES).expect("invalid buffer size"))
                 .map(|i| f64::from(i) * increment)
                 .collect::<Vec<_>>()[..],
         );
 
         let factor = Vector::splat(factor);
-        let increment = Vector::splat(increment * BUFFER_FRAMES_F64);
+        let increment = Vector::splat(increment * BUFFER_FRAMES as f64);
         let scale = Vector::splat(0.15);
         let output = Vector::default();
 

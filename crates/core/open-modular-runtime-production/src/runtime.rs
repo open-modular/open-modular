@@ -29,12 +29,6 @@ use thread_priority::{
     ThreadPriority,
     ThreadSchedulePolicy,
 };
-use tracing::{
-    debug,
-    error,
-    instrument,
-    trace,
-};
 
 #[cfg(feature = "perf")]
 use crate::process::statistics::Statistics;
@@ -85,10 +79,10 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    fn complete(handle: ScopedJoinHandle<'_, ()>, name: &str) {
+    fn complete(handle: ScopedJoinHandle<'_, ()>, _name: &str) {
         match handle.join() {
-            Ok(()) => debug!(action = "join", sync = "thread", name),
-            Err(err) => error!(action = "join", sync = "thread", ?err, name),
+            Ok(()) => {}
+            Err(_err) => {}
         }
     }
 }
@@ -107,14 +101,11 @@ impl Default for Runtime {
 impl runtime::Runtime for Runtime {
     type Context = Context;
 
-    #[instrument(level = "debug", skip(self))]
     fn run<M>(&self)
     where
         M: RuntimeModule,
     {
         thread::scope(|scope| {
-            trace!("creating barriers");
-
             // NOTE: Creating the barriers before spawning the threads prevents a race
             // condition where a thread has already passed a barrier wait before
             // other threads have increased the active count, thus leading to an
@@ -124,8 +115,6 @@ impl runtime::Runtime for Runtime {
 
             let compute = self.barrier_groups.barriers();
             let io = self.barrier_groups.barriers();
-
-            debug!(action = "spawn", sync = "thread");
 
             let compute = {
                 let policy = RealtimeThreadSchedulePolicy::RoundRobin;
@@ -142,7 +131,7 @@ impl runtime::Runtime for Runtime {
                     .priority(priority)
                     .spawn_scoped(scope, |priority| match priority {
                         Ok(()) => Compute::<M>::spawn(self, compute),
-                        Err(err) => error!(?err, "failed to set priority on compute thread"),
+                        Err(_err) => {}
                     })
                     .expect("compute thread to spawn without error")
             };
@@ -162,8 +151,6 @@ impl runtime::Runtime for Runtime {
                 .named("statistics")
                 .spawn_scoped(scope, |_| Statistics::spawn(self))
                 .expect("statistics thread to spawn without error");
-
-            debug!(action = "wait", sync = "thread");
 
             Self::complete(compute, stringify!(compute));
             Self::complete(control, stringify!(control));
