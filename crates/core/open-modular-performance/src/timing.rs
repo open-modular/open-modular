@@ -31,50 +31,59 @@ pub struct Timing {
 
 #[derive(new, Debug)]
 pub struct TimingCollector {
-    #[new(default)]
-    accumulator: Duration,
     #[new(val = Instant::now())]
     initiator: Instant,
     #[new(into)]
     name: String,
-    reporting_interval: u32,
-    #[new(default)]
-    reporting_iteration: u32,
-    sample_interval: u32,
-    #[new(default)]
-    sample_iteration: u32,
+    interval: usize,
+    #[new(val = Vec::with_capacity(interval))]
+    samples: Vec<Duration>,
     #[debug(skip)]
     sender: Sender<Timing>,
 }
 
 impl TimingCollector {
     pub fn enter(&mut self) {
-        if self.sample_iteration == self.sample_interval - 1 {
-            self.sample_iteration = 0;
-            self.initiator = Instant::now();
-        } else {
-            self.sample_iteration += 1;
-        }
+        // self.initiator = Instant::now();
+
+        // if self.sample_iteration == self.sample_interval - 1 {
+        //     self.sample_iteration = 0;
+        //     self.initiator = Instant::now();
+        // } else {
+        //     self.sample_iteration += 1;
+        // }
     }
 
     pub fn exit(&mut self) {
-        if self.sample_iteration == 0 {
-            self.accumulator += self.initiator.elapsed();
+        // self.samples.push(self.initiator.elapsed());
 
-            if self.reporting_iteration == self.reporting_interval - 1 {
-                let timing = Timing::new(self.accumulator, self.reporting_interval, &self.name);
+        // if self.samples.len() >= self.interval {
+        //     let min = self.samples.iter().min().unwrap();
+        //     let max = self.samples.iter().max().unwrap();
 
-                if let Err(err) = self.sender.try_send(timing) {
-                    // log::warn!(err:?, name = self.name; "timing data send
-                    // error");
-                }
+        //     println!("timing for {}. min: {min:?}, max: {max:?}", self.name);
 
-                self.accumulator = Duration::default();
-                self.reporting_iteration = 0;
-            } else {
-                self.reporting_iteration += 1;
-            }
-        }
+        //     self.samples.clear();
+        // }
+
+        // if self.sample_iteration == 0 {
+        //     self.accumulator += self.initiator.elapsed();
+
+        //     if self.reporting_iteration == self.reporting_interval - 1 {
+        //         let timing = Timing::new(self.accumulator,
+        // self.reporting_interval, &self.name);
+
+        //         if let Err(_err) = self.sender.try_send(timing) {
+        //             // log::warn!(err:?, name = self.name; "timing data send
+        //             // error");
+        //         }
+
+        //         self.accumulator = Duration::default();
+        //         self.reporting_iteration = 0;
+        //     } else {
+        //         self.reporting_iteration += 1;
+        //     }
+        // }
     }
 }
 
@@ -92,18 +101,8 @@ pub struct TimingAggregator {
 }
 
 impl TimingAggregator {
-    pub fn collector(
-        &self,
-        name: impl Into<String>,
-        reporting_interval: u32,
-        sampling_interval: u32,
-    ) -> TimingCollector {
-        TimingCollector::new(
-            name,
-            reporting_interval,
-            sampling_interval,
-            self.channels.0.clone(),
-        )
+    pub fn collector(&self, name: impl Into<String>, interval: usize) -> TimingCollector {
+        TimingCollector::new(name, interval, self.channels.0.clone())
     }
 }
 
@@ -112,7 +111,7 @@ impl TimingAggregator {
         if let Ok(timing) = self.channels.1.recv_timeout(self.timeout) {
             let average = timing.duration / timing.iterations;
 
-            println!("average timing: {average:?}");
+            println!("average {} timing: {average:?}", timing.name);
         }
     }
 }

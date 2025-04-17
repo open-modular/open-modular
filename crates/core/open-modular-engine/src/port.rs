@@ -26,13 +26,9 @@ use std::{
 use bon::Builder;
 use fancy_constructor::new;
 use open_modular_core::Vector;
-use uuid::Uuid;
 
 use crate::{
-    module::{
-        ModuleDefinition,
-        ModuleReference,
-    },
+    module::ModuleDefinition,
     processor::ProcessToken,
 };
 
@@ -210,30 +206,6 @@ where
 
 // -------------------------------------------------------------------------------------------------
 
-// Input Reference
-
-/// A `PortInputReference` represents a unique address to a particular port in
-/// some modular patch. It contains both the identifier for the instance of a
-/// module, and the positional index of the input port on that module.
-#[derive(new, Clone, Debug, Eq, PartialEq)]
-pub struct PortInputReference {
-    /// The identifier for the module instance
-    pub instance: Uuid,
-    /// The positional index of the input port
-    pub port: usize,
-}
-
-impl PortInputReference {
-    /// Returns a new `ModuleInstanceReference` to the module instance referred
-    /// to by this port reference.
-    #[must_use]
-    pub fn instance_ref(&self) -> ModuleReference {
-        ModuleReference::new(self.instance)
-    }
-}
-
-// -------------------------------------------------------------------------------------------------
-
 // Input Vector
 
 /// Represents the action of obtaining the vector of an input port if it is
@@ -330,30 +302,6 @@ where
 {
     fn from(builder: PortOutputDefinitionBuilder<S>) -> PortOutputDefinition {
         builder.build()
-    }
-}
-
-// -------------------------------------------------------------------------------------------------
-
-// Output Reference
-
-/// A `PortOutputReference` represents a unique address to a particular port in
-/// some modular patch. It contains both the identifier for the instance of a
-/// module, and the positional index of the output port on that module.
-#[derive(new, Clone, Debug, Eq, PartialEq)]
-pub struct PortOutputReference {
-    /// The identifier for the module instance
-    pub instance: Uuid,
-    /// The positional index of the output port
-    pub port: usize,
-}
-
-impl PortOutputReference {
-    /// Returns a new `ModuleInstanceReference` to the module instance referred
-    /// to by this port reference.
-    #[must_use]
-    pub fn instance_ref(&self) -> ModuleReference {
-        ModuleReference::new(self.instance)
     }
 }
 

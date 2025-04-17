@@ -573,6 +573,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "open-modular-examples-tone"
+version = "0.1.0"
+dependencies = [
+ "open-modular-engine",
+ "open-modular-modules-generators",
+ "open-modular-modules-io",
+ "open-modular-modules-utilities",
+ "open-modular-runtime",
+ "open-modular-runtime-production",
+]
+
+[[package]]
 name = "open-modular-io"
 version = "0.1.0"
 dependencies = [

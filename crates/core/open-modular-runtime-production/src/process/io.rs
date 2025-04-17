@@ -5,11 +5,11 @@ use std::fmt::Debug;
 use crossbeam::channel::Receiver;
 use fancy_constructor::new;
 use open_modular_core::FRAME_DURATION;
-#[cfg(feature = "perf")]
-use open_modular_performance::timing::{
-    TimingAggregator,
-    TimingCollector,
-};
+// #[cfg(feature = "perf")]
+// use open_modular_performance::timing::{
+//     TimingAggregator,
+//     TimingCollector,
+// };
 use open_modular_runtime::process::{
     Process,
     ProcessControl,
@@ -49,14 +49,15 @@ pub struct Io<'rt> {
     barriers: Barriers,
     #[new(val = runtime.exit.clone())]
     exit: Exit,
+    #[new(default)]
+    iteration: usize,
+    // #[cfg(feature = "perf")]
+    // #[new(val = &runtime.timing_aggregator)]
+    // timing_aggregator: &'rt TimingAggregator,
 
-    #[cfg(feature = "perf")]
-    #[new(val = &runtime.timing_aggregator)]
-    timing_aggregator: &'rt TimingAggregator,
-
-    #[cfg(feature = "perf")]
-    #[new(val = runtime.timing_aggregator.collector("io/configure", 50, 50))]
-    timing_collector: TimingCollector,
+    // #[cfg(feature = "perf")]
+    // #[new(val = runtime.timing_aggregator.collector("io/configure", 1500))]
+    // timing_collector: TimingCollector,
 }
 
 impl<'rt> Io<'rt> {
@@ -72,53 +73,59 @@ impl AsMut<Barriers> for Io<'_> {
 }
 
 impl Process for Io<'_> {
-    fn configure(&mut self) -> ProcessControl {
+    fn phase_0(&mut self) -> ProcessControl {
         self.audio_timer.reset();
 
-        #[cfg(feature = "perf")]
-        self.timing_collector.enter();
+        // #[cfg(feature = "perf")]
+        // self.timing_collector.enter();
 
-        if self.exit.triggered() {
-            return ProcessControl::Exit;
-        }
+        if self.iteration >= 325 {
+            if self.exit.triggered() {
+                return ProcessControl::Exit;
+            }
 
-        self.audio_controller.collect();
+            self.audio_controller.collect();
 
-        if let Ok(protocol) = self.audio_receiver.try_recv() {
-            match protocol {
-                AudioProtocol::GetOutputBuffer(id, output_buffer_value) => {
-                    let barriers = self.barrier_groups.barriers();
+            if let Ok(protocol) = self.audio_receiver.try_recv() {
+                match protocol {
+                    AudioProtocol::GetOutputBuffer(id, output_buffer_value) => {
+                        let barriers = self.barrier_groups.barriers();
 
-                    #[cfg(feature = "perf")]
-                    let timing = {
-                        let name = format!("io[{id}]/io");
-                        let collector = self.timing_aggregator.collector(&name, 50, 50);
+                        // #[cfg(feature = "perf")]
+                        // let timing = {
+                        //     let name = format!("io[{id}]/io");
+                        //     let collector = self.timing_aggregator.collector(&name, 1500);
 
-                        Some(collector)
-                    };
+                        //     Some(collector)
+                        // };
 
-                    #[cfg(not(feature = "perf"))]
-                    let timing = None;
+                        // #[cfg(not(feature = "perf"))]
+                        // let timing = None;
 
-                    let output_buffer = self.audio_controller.output_buffer(barriers, id, timing);
+                        let output_buffer = self.audio_controller.output_buffer(barriers, id);
 
-                    output_buffer_value.set(output_buffer);
-                }
-                AudioProtocol::GetOutputs(outputs_value) => {
-                    let outputs = self.audio_controller.outputs();
+                        output_buffer_value.set(output_buffer);
+                    }
+                    AudioProtocol::GetOutputs(outputs_value) => {
+                        let outputs = self.audio_controller.outputs();
 
-                    outputs_value.set(outputs);
+                        outputs_value.set(outputs);
+                    }
                 }
             }
+
+            self.iteration = 0;
+        } else {
+            self.iteration += 1;
         }
 
-        #[cfg(feature = "perf")]
-        self.timing_collector.exit();
+        // #[cfg(feature = "perf")]
+        // self.timing_collector.exit();
 
         ProcessControl::Continue
     }
 
-    fn io(&mut self) {
+    fn phase_2(&mut self) {
         if !self.audio_controller.is_active() {
             self.audio_timer.wait();
         }

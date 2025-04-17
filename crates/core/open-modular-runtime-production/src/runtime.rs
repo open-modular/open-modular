@@ -15,8 +15,8 @@ use open_modular_engine::module::{
     Module,
     ModuleSource,
 };
-#[cfg(feature = "perf")]
-use open_modular_performance::timing::TimingAggregator;
+// #[cfg(feature = "perf")]
+// use open_modular_performance::timing::TimingAggregator;
 use open_modular_runtime::runtime;
 use open_modular_synchronization::{
     barrier::BarrierGroups,
@@ -30,13 +30,13 @@ use thread_priority::{
     ThreadSchedulePolicy,
 };
 
-#[cfg(feature = "perf")]
-use crate::process::statistics::Statistics;
+// #[cfg(feature = "perf")]
+// use crate::process::statistics::Statistics;
 use crate::{
     context::Context,
     process::{
-        compute::Compute,
         control::Control,
+        engine::Engine,
         io::{
             Io,
             audio::{
@@ -72,10 +72,9 @@ pub struct Runtime {
     pub(crate) context: <Self as runtime::Runtime>::Context,
     #[new(default)]
     pub(crate) exit: Exit,
-
-    #[cfg(feature = "perf")]
-    #[new(default)]
-    pub timing_aggregator: TimingAggregator,
+    // #[cfg(feature = "perf")]
+    // #[new(default)]
+    // pub timing_aggregator: TimingAggregator,
 }
 
 impl Runtime {
@@ -111,53 +110,56 @@ impl runtime::Runtime for Runtime {
             // other threads have increased the active count, thus leading to an
             // unsynchronized set of barriers (and a resultant deadlock). Any
             // additional new barriers should always be created before the first
-            // barrier is reached, in the logical configuration phase.
+            // barrier is reached, in phase 0.
 
-            let compute = self.barrier_groups.barriers();
-            let io = self.barrier_groups.barriers();
+            let engine_barriers = self.barrier_groups.barriers();
+            let io_barriers = self.barrier_groups.barriers();
 
-            let compute = {
-                let policy = RealtimeThreadSchedulePolicy::RoundRobin;
-                let policy = ThreadSchedulePolicy::Realtime(policy);
+            let processor_channels = channel::unbounded();
 
-                let priority = ThreadPriority::max_value_for_policy(policy).expect("priority");
-                let priority = u8::try_from(priority).expect("priority value within range");
-                let priority = priority.try_into().expect("priority value");
-                let priority = ThreadPriority::Crossplatform(priority);
+            let control = ThreadBuilder::default()
+                .named("control")
+                .spawn_scoped(scope, |_| Control::spawn(self, processor_channels.0))
+                .expect("control thread to spawn without error");
+
+            let engine = {
+                // let policy = RealtimeThreadSchedulePolicy::RoundRobin;
+                // let policy = ThreadSchedulePolicy::Realtime(policy);
+
+                // let priority =
+                // ThreadPriority::max_value_for_policy(policy).expect("priority");
+                // let priority = u8::try_from(priority).expect("priority value within range");
+                // let priority = priority.try_into().expect("priority value");
+                // let priority = ThreadPriority::Crossplatform(priority);
 
                 ThreadBuilder::default()
-                    .named("compute")
-                    .policy(policy)
-                    .priority(priority)
+                    .named("engine")
+                    // .policy(policy)
+                    // .priority(priority)
                     .spawn_scoped(scope, |priority| match priority {
-                        Ok(()) => Compute::<M>::spawn(self, compute),
+                        Ok(()) => Engine::<M>::spawn(self, engine_barriers, processor_channels.1),
                         Err(_err) => {}
                     })
                     .expect("compute thread to spawn without error")
             };
 
-            let control = ThreadBuilder::default()
-                .named("control")
-                .spawn_scoped(scope, |_| Control::spawn(self))
-                .expect("control thread to spawn without error");
-
             let io = ThreadBuilder::default()
                 .named("io")
-                .spawn_scoped(scope, |_| Io::spawn(self, io))
+                .spawn_scoped(scope, |_| Io::spawn(self, io_barriers))
                 .expect("io thread to spawn without error");
 
-            #[cfg(feature = "perf")]
-            let statistics = ThreadBuilder::default()
-                .named("statistics")
-                .spawn_scoped(scope, |_| Statistics::spawn(self))
-                .expect("statistics thread to spawn without error");
+            // #[cfg(feature = "perf")]
+            // let statistics = ThreadBuilder::default()
+            //     .named("statistics")
+            //     .spawn_scoped(scope, |_| Statistics::spawn(self))
+            //     .expect("statistics thread to spawn without error");
 
-            Self::complete(compute, stringify!(compute));
             Self::complete(control, stringify!(control));
+            Self::complete(engine, stringify!(engine));
             Self::complete(io, stringify!(io));
 
-            #[cfg(feature = "perf")]
-            Self::complete(statistics, stringify!(statistics));
+            // #[cfg(feature = "perf")]
+            // Self::complete(statistics, stringify!(statistics));
         });
     }
 }

@@ -34,11 +34,14 @@ fn process_sin_750(criterion: &mut Criterion) {
     let mut processor = Processor::<Module<()>>::default();
 
     for _ in 0..50 {
-        let a_ref = processor.add(Uuid::new_v4(), Module::get(&Sine::<()>::id(), ()));
-        let b_ref = processor.add(Uuid::new_v4(), Module::get(&Multiple::<()>::id(), ()));
+        let a_id = Uuid::new_v4();
+        let b_id = Uuid::new_v4();
+
+        processor.add(a_id, Module::get(&Sine::<()>::id(), ()));
+        processor.add(b_id, Module::get(&Multiple::<()>::id(), ()));
 
         unsafe {
-            processor.connect(&a_ref.output_ref(0), &b_ref.input_ref(0));
+            processor.connect(a_id, 0, b_id, 0);
         }
     }
 

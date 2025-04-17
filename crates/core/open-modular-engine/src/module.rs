@@ -1,16 +1,13 @@
 use bon::Builder;
-use fancy_constructor::new;
 use uuid::Uuid;
 
 use crate::{
     port::{
         PortInputDefinition,
         PortInputDefinitionBuilder,
-        PortInputReference,
         PortInputs,
         PortOutputDefinition,
         PortOutputDefinitionBuilder,
-        PortOutputReference,
         PortOutputs,
     },
     processor::Process,
@@ -106,27 +103,6 @@ pub trait ModuleInstantiate {
         port_inputs: PortInputs,
         port_outputs: PortOutputs,
     ) -> Self;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-// Reference
-
-#[derive(new, Clone, Debug, Eq, PartialEq)]
-pub struct ModuleReference {
-    pub instance: Uuid,
-}
-
-impl ModuleReference {
-    #[must_use]
-    pub fn input_ref(&self, input: usize) -> PortInputReference {
-        PortInputReference::new(self.instance, input)
-    }
-
-    #[must_use]
-    pub fn output_ref(&self, output: usize) -> PortOutputReference {
-        PortOutputReference::new(self.instance, output)
-    }
 }
 
 // -------------------------------------------------------------------------------------------------

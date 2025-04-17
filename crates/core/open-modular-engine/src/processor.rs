@@ -3,27 +3,44 @@ use std::{
     fmt::Debug,
 };
 
+use fancy_constructor::new;
 use indexmap::IndexMap;
 use uuid::Uuid;
 
 use crate::{
     module::{
         Module,
-        ModuleReference,
+        ModuleSource,
     },
     port::{
         PortConnect as _,
         PortDisconnect as _,
         PortInputGet as _,
-        PortInputReference,
         PortOutputGet as _,
-        PortOutputReference,
     },
 };
 
 // =================================================================================================
 // Processor
 // =================================================================================================
+
+// Process
+
+pub trait Process {
+    fn process(&mut self, args: &ProcessArgs);
+}
+
+#[derive(Debug, Default)]
+pub struct ProcessArgs {
+    pub token: ProcessToken,
+}
+
+#[derive(Debug, Default)]
+pub struct ProcessToken(pub(crate) usize);
+
+// -------------------------------------------------------------------------------------------------
+
+// Processor
 
 #[derive(Debug)]
 pub struct Processor<M>
@@ -38,16 +55,14 @@ impl<M> Processor<M>
 where
     M: Debug + Module,
 {
-    pub fn add(&mut self, key: Uuid, module: M) -> ModuleReference {
+    pub fn add(&mut self, instance: Uuid, module: M) {
         let module = SyncUnsafeCell::new(module);
 
-        self.modules.insert(key, module);
-
-        ModuleReference::new(key)
+        self.modules.insert(instance, module);
     }
 
-    pub fn remove(&mut self, module_ref: &ModuleReference) {
-        self.modules.swap_remove(&module_ref.instance);
+    pub fn remove(&mut self, instance: &Uuid) {
+        self.modules.swap_remove(instance);
     }
 }
 
@@ -68,23 +83,25 @@ where
     /// .
     pub unsafe fn connect(
         &mut self,
-        output_ref: &PortOutputReference,
-        input_ref: &PortInputReference,
+        input_instance: Uuid,
+        input_port: usize,
+        output_instance: Uuid,
+        output_port: usize,
     ) {
         let outputs = self
             .modules
-            .get(&output_ref.instance)
+            .get(&output_instance)
             .map(|instance| unsafe { (*instance.get()).as_mut() })
             .expect("output instance to exist");
 
         let inputs = self
             .modules
-            .get(&input_ref.instance)
+            .get(&input_instance)
             .map(|instance| unsafe { (*instance.get()).as_ref() })
             .expect("input instance to exist");
 
-        let output = outputs.port(output_ref.port).expect("output port to exist");
-        let input = inputs.port(input_ref.port).expect("input port to exist");
+        let output = outputs.port(output_port).expect("output port to exist");
+        let input = inputs.port(input_port).expect("input port to exist");
 
         unsafe {
             output.connect(input);
@@ -100,14 +117,14 @@ where
     /// # Safety
     ///
     /// .
-    pub unsafe fn disconnect(&mut self, input_ref: &PortInputReference) {
+    pub unsafe fn disconnect(&mut self, input_instance: Uuid, input_port: usize) {
         let inputs = self
             .modules
-            .get(&input_ref.instance)
+            .get(&input_instance)
             .map(|instance| unsafe { (*instance.get()).as_ref() })
             .expect("input instance to exist");
 
-        let input = inputs.port(input_ref.port).expect("input port to exist");
+        let input = inputs.port(input_port).expect("input port to exist");
 
         unsafe {
             input.disconnect();
@@ -141,16 +158,60 @@ where
 
 // -------------------------------------------------------------------------------------------------
 
-// Process
+// Protocol
 
-pub trait Process {
-    fn process(&mut self, args: &ProcessArgs);
+#[derive(Clone, Debug)]
+pub enum ProcessorProtocol {
+    Add(ProcessorProtocolAdd),
+    Connect(ProcessorProtocolConnect),
 }
 
-#[derive(Debug, Default)]
-pub struct ProcessArgs {
-    pub token: ProcessToken,
+impl ProcessorProtocol {
+    pub fn apply<C, M>(self, context: &C, processor: &mut Processor<M>)
+    where
+        C: Clone,
+        M: Debug + Module + ModuleSource<Context = C>,
+    {
+        match self {
+            Self::Add(add) => {
+                let module = M::get(&add.module, context.clone());
+
+                processor.add(add.instance, module);
+            }
+            Self::Connect(connect) => unsafe {
+                processor.connect(
+                    connect.input_instance,
+                    connect.input_port,
+                    connect.output_instance,
+                    connect.output_port,
+                );
+            },
+        }
+    }
 }
 
-#[derive(Debug, Default)]
-pub struct ProcessToken(pub(crate) usize);
+impl From<ProcessorProtocolAdd> for ProcessorProtocol {
+    fn from(add: ProcessorProtocolAdd) -> Self {
+        Self::Add(add)
+    }
+}
+
+impl From<ProcessorProtocolConnect> for ProcessorProtocol {
+    fn from(connect: ProcessorProtocolConnect) -> Self {
+        Self::Connect(connect)
+    }
+}
+
+#[derive(new, Clone, Debug)]
+pub struct ProcessorProtocolAdd {
+    instance: Uuid,
+    module: Uuid,
+}
+
+#[derive(new, Clone, Debug)]
+pub struct ProcessorProtocolConnect {
+    input_instance: Uuid,
+    input_port: usize,
+    output_instance: Uuid,
+    output_port: usize,
+}

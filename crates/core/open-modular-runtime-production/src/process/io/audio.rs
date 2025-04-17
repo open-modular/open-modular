@@ -8,6 +8,7 @@ use std::{
         Arc,
         Weak,
     },
+    time::Instant,
 };
 
 use crossbeam::channel;
@@ -26,8 +27,8 @@ use open_modular_io::audio::{
     },
     system::GetApi as _,
 };
-#[cfg(feature = "perf")]
-use open_modular_performance::timing::TimingCollector;
+// #[cfg(feature = "perf")]
+// use open_modular_performance::timing::TimingCollector;
 use open_modular_runtime::io::audio::{
     Audio,
     AudioOutput,
@@ -124,7 +125,7 @@ impl AudioController {
         &mut self,
         mut barriers: Barriers,
         id: u32,
-        mut timing_collector: Option<TimingCollector>,
+        // mut timing_collector: Option<TimingCollector>,
     ) -> AudioOutputBuffer {
         let device = self.host.device(id);
         let channels = device.channels.output;
@@ -156,18 +157,22 @@ impl AudioController {
 
                     move |data, info| {
                         match info.status {
-                            StreamStatus::Overflow => println!("output stream overflow"),
-                            StreamStatus::Underflow => println!("output stream underflow"),
+                            StreamStatus::Overflow => {
+                                println!("output stream overflow: {:?}", Instant::now());
+                            }
+                            StreamStatus::Underflow => {
+                                println!("output stream underflow: {:?}", Instant::now());
+                            }
                             _ => {}
                         }
 
-                        barriers.configuration.wait();
-                        barriers.compute.wait();
+                        barriers.phase_0.wait();
+                        barriers.phase_1.wait();
 
-                        #[cfg(feature = "perf")]
-                        unsafe {
-                            timing_collector.as_mut().unwrap_unchecked().enter();
-                        }
+                        // #[cfg(feature = "perf")]
+                        // unsafe {
+                        //     timing_collector.as_mut().unwrap_unchecked().enter();
+                        // }
 
                         // Use the shared store of weak buffers which is also stored in the audio
                         // output stream and which is added to when new output buffers are
@@ -204,13 +209,6 @@ impl AudioController {
                                     .for_each(|(output, buffer)| *output += buffer);
                             }
 
-                            // for buffer in buffers.values() {
-                            //     output
-                            //         .iter_mut()
-                            //         .zip(unsafe { &*buffer.0.upgrade().unwrap_unchecked().get()
-                            // })         .for_each(|(output, buffer)|
-                            // *output += buffer); }
-
                             // For each of the vectors in the output mix, cast it to the target
                             // output format (f32) and copy it to the appropriate place in the
                             // output data slice.
@@ -225,13 +223,13 @@ impl AudioController {
                                     .copy_to_slice(&mut data[i * 64..(i + 1) * 64]);
                             });
 
-                            #[cfg(feature = "perf")]
-                            unsafe {
-                                timing_collector.as_mut().unwrap_unchecked().exit();
-                            }
+                            // #[cfg(feature = "perf")]
+                            // unsafe {
+                            //     timing_collector.as_mut().unwrap_unchecked().
+                            // exit(); }
                         }
 
-                        barriers.io.wait();
+                        barriers.phase_2.wait();
                     }
                 });
 
