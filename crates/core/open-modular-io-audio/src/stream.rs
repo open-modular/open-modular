@@ -14,6 +14,7 @@ use bon::Builder;
 use derive_more::Debug;
 use fancy_constructor::new;
 use open_modular_core::{
+    // BUFFER_FRAMES,
     BUFFER_FRAMES,
     SAMPLE_RATE,
 };
@@ -33,12 +34,15 @@ use rtaudio_sys::{
     rtaudio_stream_options,
     rtaudio_stream_parameters,
     rtaudio_stream_status_t,
-    rtaudio_t,
 };
 
-use crate::system::{
-    self,
-    Api,
+use crate::{
+    audio::Audio,
+    error::{
+        GeneralError,
+        ParameterisationError,
+        Result,
+    },
 };
 
 // =================================================================================================
@@ -76,16 +80,18 @@ where
     D: StreamDirection,
     S: StreamState,
 {
-    state: Option<(rtaudio_t, Pin<Box<D::Context>>)>,
+    state: Option<(Audio, Pin<Box<D::Context>>)>,
     _specialisation: (D, S),
 }
 
 impl Stream<StreamUnspecified, StreamAny> {
+    /// # TODO
+    ///
+    /// # Errors
     pub fn output(
-        api: impl Into<Api>,
+        audio: Audio,
         parameters: impl Into<StreamParameters>,
-    ) -> Stream<StreamOutput, StreamInactive> {
-        let audio = system::create_audio(api.into());
+    ) -> Result<Stream<StreamOutput, StreamInactive>> {
         let parameters = parameters.into();
 
         let info = StreamInfo::new(
@@ -99,7 +105,11 @@ impl Stream<StreamUnspecified, StreamAny> {
         let mut context = Box::pin(StreamOutputContext::new(info));
         let context_ptr: *mut StreamOutputContext = &mut *context;
 
-        let mut buffer_frames = u32::try_from(BUFFER_FRAMES).expect("invalid buffer size");
+        let sample_rate = u32::try_from(SAMPLE_RATE)
+            .map_err(|_| ParameterisationError::create("invalid sample rate parameter"))?;
+
+        let mut buffer_frames = u32::try_from(BUFFER_FRAMES)
+            .map_err(|_| ParameterisationError::create("invalid buffer frames parameter"))?;
 
         let userdata = context_ptr.cast::<c_void>();
 
@@ -109,47 +119,49 @@ impl Stream<StreamUnspecified, StreamAny> {
         }
         .into();
 
-        unsafe {
+        audio.run(|audio| unsafe {
             rtaudio_sys::rtaudio_open_stream(
-                audio,
+                audio.raw(),
                 output,
                 ptr::null_mut(),
                 RTAUDIO_FORMAT_FLOAT32,
-                u32::try_from(SAMPLE_RATE).expect("invalid sample rate"),
+                sample_rate,
                 &mut buffer_frames,
                 Some(stream_output_callback),
                 userdata,
                 &mut options,
                 Some(stream_error_callback),
             );
-        }
-
-        system::validate_audio(audio);
+        })?;
 
         context.info.buffers.frames = buffer_frames;
 
-        let latency = unsafe { rtaudio_sys::rtaudio_get_stream_latency(audio) };
+        match audio.run(|a| unsafe { rtaudio_sys::rtaudio_get_stream_latency(a.raw()) })? {
+            latency if latency > 0 => {
+                let latency = usize::try_from(latency)
+                    .map_err(|_| GeneralError::create("invalid latency value"))?;
 
-        if latency > 0 {
-            context.info.latency = Some(usize::try_from(latency).expect("valid latency value"));
+                context.info.latency = Some(latency);
+            }
+            _ => {}
         }
 
-        system::validate_audio(audio);
-
-        let sample_rate = unsafe { rtaudio_sys::rtaudio_get_stream_sample_rate(audio) };
-
-        if sample_rate > 0 {
-            context.info.samples.rate = sample_rate;
+        match audio.run(|a| unsafe { rtaudio_sys::rtaudio_get_stream_sample_rate(a.raw()) })? {
+            sample_rate if sample_rate > 0 => context.info.samples.rate = sample_rate,
+            _ => {}
         }
 
-        system::validate_audio(audio);
+        let stream = Stream::new(Some((audio, context)), (StreamOutput, StreamInactive));
 
-        Stream::new(Some((audio, context)), (StreamOutput, StreamInactive))
+        Ok(stream)
     }
 }
 
 impl Stream<StreamOutput, StreamInactive> {
-    pub fn activate<F>(mut self, callback: F) -> Stream<StreamOutput, StreamActive>
+    /// # TODO
+    ///
+    /// # Errors
+    pub fn activate<F>(mut self, callback: F) -> Result<Stream<StreamOutput, StreamActive>>
     where
         F: FnMut(&mut [f32], &StreamInfo) + Send + 'static,
     {
@@ -157,25 +169,28 @@ impl Stream<StreamOutput, StreamInactive> {
             Some((audio, mut context)) => {
                 context.callback = Box::new(callback);
 
-                unsafe {
-                    rtaudio_sys::rtaudio_start_stream(audio);
-                }
+                audio.run(|audio| unsafe {
+                    rtaudio_sys::rtaudio_start_stream(audio.raw());
+                })?;
 
-                system::validate_audio(audio);
+                let stream = Stream::new(Some((audio, context)), (StreamOutput, StreamActive));
 
-                Stream::new(Some((audio, context)), (StreamOutput, StreamActive))
+                Ok(stream)
             }
-            _ => panic!("state not found"),
+            _ => GeneralError {
+                message: "inconsistent stream state",
+            }
+            .fail(),
         }
     }
 }
 
-impl<D, S> AsRef<rtaudio_t> for Stream<D, S>
+impl<D, S> AsRef<Audio> for Stream<D, S>
 where
     D: StreamDirection,
     S: StreamState,
 {
-    fn as_ref(&self) -> &rtaudio_t {
+    fn as_ref(&self) -> &Audio {
         &self.state.as_ref().expect("data to be present").0
     }
 }
@@ -187,9 +202,9 @@ where
 {
     fn drop(&mut self) {
         match self.state.take() {
-            Some((audio, _)) if !audio.is_null() => unsafe {
-                rtaudio_sys::rtaudio_close_stream(audio);
-                rtaudio_sys::rtaudio_destroy(audio);
+            Some((audio, _)) if !audio.raw().is_null() => unsafe {
+                rtaudio_sys::rtaudio_close_stream(audio.raw());
+                rtaudio_sys::rtaudio_destroy(audio.raw());
             },
             _ => {}
         }

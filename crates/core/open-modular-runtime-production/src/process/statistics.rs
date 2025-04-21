@@ -4,7 +4,7 @@ use fancy_constructor::new;
 use open_modular_performance::timing::TimingAggregator;
 use open_modular_synchronization::control::Exit;
 
-use crate::runtime::Runtime;
+use crate::runtime_old::Runtime;
 
 // =================================================================================================
 // Control

@@ -1,8 +1,20 @@
-pub mod device;
-pub mod host;
-pub mod stream;
-pub mod system;
+mod api;
+mod audio;
+mod configuration;
+mod device;
+mod error;
+mod stream;
+mod util;
 
 // =================================================================================================
 // Audio
 // =================================================================================================
+
+pub use self::{
+    api::*,
+    audio::*,
+    configuration::*,
+    device::*,
+    error::*,
+    stream::*,
+};

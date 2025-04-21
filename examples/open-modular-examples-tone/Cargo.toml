@@ -1,10 +1,13 @@
 [dependencies]
 open-modular-engine.workspace             = true
+open-modular-io-audio.workspace           = true
 open-modular-modules-generators.workspace = true
 open-modular-modules-io.workspace         = true
 open-modular-modules-utilities.workspace  = true
 open-modular-runtime.workspace            = true
 open-modular-runtime-production.workspace = true
+rtrb.workspace                            = true
+thread-priority.workspace                 = true
 
 [lints]
 workspace = true

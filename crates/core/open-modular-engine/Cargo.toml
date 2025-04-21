@@ -6,6 +6,7 @@ indexmap.workspace                   = true
 open-modular-core.workspace          = true
 open-modular-engine-macros.workspace = true
 open-modular-utilities.workspace     = true
+rtrb.workspace                       = true
 uuid.workspace                       = true
 
 [lints]

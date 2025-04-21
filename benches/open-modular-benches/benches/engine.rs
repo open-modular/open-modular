@@ -6,7 +6,9 @@ use criterion::{
     criterion_group,
     criterion_main,
 };
+use open_modular_core::Vector;
 use open_modular_engine::{
+    bus::Bus,
     module::{
         ModuleIdentify as _,
         ModuleSource as _,
@@ -31,7 +33,10 @@ criterion_group!(engine, process_sin_750);
 // Processing
 
 fn process_sin_750(criterion: &mut Criterion) {
-    let mut processor = Processor::<Module<()>>::default();
+    let bus = Bus::default();
+    let receiver = bus.split().1;
+
+    let mut processor = Processor::<Module<()>>::new(receiver);
 
     for _ in 0..50 {
         let a_id = Uuid::new_v4();
@@ -45,10 +50,13 @@ fn process_sin_750(criterion: &mut Criterion) {
         }
     }
 
+    let context = ();
+    let mut output = vec![Vector::default(); 2];
+
     criterion.bench_function("process sin 750", |bencher| {
         bencher.iter(|| {
             for i in 0..750 {
-                processor.process(black_box(i));
+                processor.process(&context, black_box(i), &mut output);
             }
         });
     });

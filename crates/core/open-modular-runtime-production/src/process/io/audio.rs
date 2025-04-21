@@ -15,7 +15,7 @@ use crossbeam::channel;
 use derive_more::Debug;
 use fancy_constructor::new;
 use open_modular_core::Vector;
-use open_modular_io::audio::{
+use open_modular_io_audio::{
     device::DeviceOutputFilter as _,
     host::Host,
     stream::{
@@ -25,7 +25,7 @@ use open_modular_io::audio::{
         StreamParameters,
         StreamStatus,
     },
-    system::GetApi as _,
+    system::SystemGet as _,
 };
 // #[cfg(feature = "perf")]
 // use open_modular_performance::timing::TimingCollector;
@@ -133,7 +133,7 @@ impl AudioController {
         let output = match self.outputs.get_mut(&id) {
             Some(output) => output,
             None => {
-                let api = self.host.api();
+                let api = self.host.system();
                 let buffers = AudioBufferWeakMap::default();
                 let parameters = StreamParameters::for_device(id).channels(channels);
 

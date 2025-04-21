@@ -4,11 +4,13 @@ derive_more.workspace                  = true
 fancy_constructor.workspace            = true
 open-modular-core.workspace            = true
 open-modular-engine.workspace          = true
-open-modular-io.workspace              = true
+open-modular-io-audio.workspace        = true
 open-modular-performance.workspace     = true
 open-modular-runtime.workspace         = true
 open-modular-synchronization.workspace = true
 open-modular-utilities.workspace       = true
+serde.workspace                        = true
+snafu.workspace                        = true
 thread-priority.workspace              = true
 uuid.workspace                         = true
 

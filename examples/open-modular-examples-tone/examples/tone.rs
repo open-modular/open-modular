@@ -1,30 +1,35 @@
-use std::fmt::Debug;
+use std::{
+    error::Error,
+    fmt::Debug,
+};
 
 use open_modular_engine::module::module_enum;
 use open_modular_modules_generators::Sine;
-use open_modular_modules_io::audio::Output;
 use open_modular_modules_utilities::Multiple;
-use open_modular_runtime::{
-    io::audio::GetAudio,
-    runtime::Runtime as _,
+use open_modular_runtime::runtime::Runtime as _;
+use open_modular_runtime_production::{
+    Configuration,
+    Runtime,
 };
-use open_modular_runtime_production::Runtime;
 
 // =================================================================================================
 // Tone
 // =================================================================================================
 
-pub fn main() {
-    Runtime::default().run::<Module<_>>();
+pub fn main() -> Result<(), Box<dyn Error>> {
+    // let config = Configuration::default();
+
+    // Runtime::new(config).run::<Module<_>>()?;
+
+    Ok(())
 }
 
 #[module_enum(id = "2d845926-8ef1-43ec-9be2-8471cb55a2e4")]
 #[derive(Debug)]
 pub enum Module<R>
 where
-    R: Debug + GetAudio,
+    R: Debug,
 {
     Multiple,
-    Output,
     Sine,
 }

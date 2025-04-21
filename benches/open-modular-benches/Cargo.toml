@@ -6,6 +6,7 @@ name    = "engine"
 
 [dev-dependencies]
 criterion.workspace                       = true
+open-modular-core.workspace               = true
 open-modular-engine.workspace             = true
 open-modular-modules-generators.workspace = true
 open-modular-modules-io.workspace         = true

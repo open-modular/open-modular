@@ -1,49 +1,28 @@
-use std::{
-    fmt::Debug,
-    thread::{
-        self,
-        ScopedJoinHandle,
-    },
-};
+use std::fmt::Debug;
 
-use crossbeam::channel::{
-    self,
-    Receiver,
-};
-use fancy_constructor::new;
 use open_modular_engine::module::{
     Module,
     ModuleSource,
 };
-// #[cfg(feature = "perf")]
-// use open_modular_performance::timing::TimingAggregator;
+use open_modular_io_audio::{
+    Api,
+    Audio,
+    Configuration as AudioConfiguration,
+    Device,
+    Stream,
+    StreamInactive,
+    StreamInfo,
+    StreamOutput,
+    StreamParameters,
+};
 use open_modular_runtime::runtime;
-use open_modular_synchronization::{
-    barrier::BarrierGroups,
-    control::Exit,
-};
-use open_modular_utilities::thread::BuilderExt as _;
-use thread_priority::{
-    RealtimeThreadSchedulePolicy,
-    ThreadBuilder,
-    ThreadPriority,
-    ThreadSchedulePolicy,
-};
 
-// #[cfg(feature = "perf")]
-// use crate::process::statistics::Statistics;
 use crate::{
+    configuration::Configuration,
     context::Context,
-    process::{
-        control::Control,
-        engine::Engine,
-        io::{
-            Io,
-            audio::{
-                AudioContext,
-                AudioProtocol,
-            },
-        },
+    error::{
+        Error,
+        Result,
     },
 };
 
@@ -51,115 +30,65 @@ use crate::{
 // Runtime
 // =================================================================================================
 
-// Module
-
-#[rustfmt::skip]
-pub trait RuntimeModule =
-      Debug 
-    + Module
-    + ModuleSource<Context = <Runtime as runtime::Runtime>::Context>;
-
-// -------------------------------------------------------------------------------------------------
-
-// Runtime
-
-#[derive(new, Debug)]
-#[new(vis())]
+#[derive(Debug)]
 pub struct Runtime {
-    pub(crate) audio_receiver: Receiver<AudioProtocol>,
-    #[new(default)]
-    pub(crate) barrier_groups: BarrierGroups,
-    pub(crate) context: <Self as runtime::Runtime>::Context,
-    #[new(default)]
-    pub(crate) exit: Exit,
-    // #[cfg(feature = "perf")]
-    // #[new(default)]
-    // pub timing_aggregator: TimingAggregator,
+    configuration: Configuration,
 }
 
 impl Runtime {
-    fn complete(handle: ScopedJoinHandle<'_, ()>, _name: &str) {
-        match handle.join() {
-            Ok(()) => {}
-            Err(_err) => {}
-        }
-    }
-}
-
-impl Default for Runtime {
-    fn default() -> Self {
-        let audio_channels = channel::unbounded();
-        let audio_context = AudioContext::new(audio_channels.0);
-
-        let context = Context::new(audio_context);
-
-        Self::new(audio_channels.1, context)
+    #[must_use]
+    pub fn new(configuration: Configuration) -> Self {
+        Self { configuration }
     }
 }
 
 impl runtime::Runtime for Runtime {
     type Context = Context;
+    type Error = Error;
 
-    fn run<M>(&self)
+    fn run<M>(&self) -> Result<()>
     where
-        M: RuntimeModule,
+        M: Debug + Module + ModuleSource<Context = Self::Context>,
     {
-        thread::scope(|scope| {
-            // NOTE: Creating the barriers before spawning the threads prevents a race
-            // condition where a thread has already passed a barrier wait before
-            // other threads have increased the active count, thus leading to an
-            // unsynchronized set of barriers (and a resultant deadlock). Any
-            // additional new barriers should always be created before the first
-            // barrier is reached, in phase 0.
+        let audio = RuntimeAudio::new(&self.configuration.audio)?;
 
-            let engine_barriers = self.barrier_groups.barriers();
-            let io_barriers = self.barrier_groups.barriers();
+        audio.activate(|_data, _info| {})?;
 
-            let processor_channels = channel::unbounded();
+        Ok(())
+    }
+}
 
-            let control = ThreadBuilder::default()
-                .named("control")
-                .spawn_scoped(scope, |_| Control::spawn(self, processor_channels.0))
-                .expect("control thread to spawn without error");
+// -------------------------------------------------------------------------------------------------
 
-            let engine = {
-                // let policy = RealtimeThreadSchedulePolicy::RoundRobin;
-                // let policy = ThreadSchedulePolicy::Realtime(policy);
+// Audio
 
-                // let priority =
-                // ThreadPriority::max_value_for_policy(policy).expect("priority");
-                // let priority = u8::try_from(priority).expect("priority value within range");
-                // let priority = priority.try_into().expect("priority value");
-                // let priority = ThreadPriority::Crossplatform(priority);
+#[derive(Debug)]
+struct RuntimeAudio {
+    stream: Stream<StreamOutput, StreamInactive>,
+}
 
-                ThreadBuilder::default()
-                    .named("engine")
-                    // .policy(policy)
-                    // .priority(priority)
-                    .spawn_scoped(scope, |priority| match priority {
-                        Ok(()) => Engine::<M>::spawn(self, engine_barriers, processor_channels.1),
-                        Err(_err) => {}
-                    })
-                    .expect("compute thread to spawn without error")
-            };
+impl RuntimeAudio {
+    fn new(configuration: &AudioConfiguration) -> Result<Self> {
+        let api = Api::try_from(configuration.api.as_str())?;
+        let audio = Audio::new(api)?;
 
-            let io = ThreadBuilder::default()
-                .named("io")
-                .spawn_scoped(scope, |_| Io::spawn(self, io_barriers))
-                .expect("io thread to spawn without error");
+        let output = StreamParameters::for_device(configuration.output.device)
+            .channels(configuration.output.channels)
+            .build();
 
-            // #[cfg(feature = "perf")]
-            // let statistics = ThreadBuilder::default()
-            //     .named("statistics")
-            //     .spawn_scoped(scope, |_| Statistics::spawn(self))
-            //     .expect("statistics thread to spawn without error");
+        let stream = Stream::output(audio, output)?;
 
-            Self::complete(control, stringify!(control));
-            Self::complete(engine, stringify!(engine));
-            Self::complete(io, stringify!(io));
+        Ok(Self { stream })
+    }
+}
 
-            // #[cfg(feature = "perf")]
-            // Self::complete(statistics, stringify!(statistics));
-        });
+impl RuntimeAudio {
+    fn activate<F>(self, callback: F) -> Result<()>
+    where
+        F: FnMut(&mut [f32], &StreamInfo) + Send + 'static,
+    {
+        self.stream.activate(callback)?;
+
+        Ok(())
     }
 }

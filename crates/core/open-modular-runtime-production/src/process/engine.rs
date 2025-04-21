@@ -20,7 +20,7 @@ use open_modular_synchronization::{
     control::Exit,
 };
 
-use crate::runtime::{
+use crate::runtime_old::{
     Runtime,
     RuntimeModule,
 };
@@ -94,7 +94,7 @@ where
         // #[cfg(feature = "perf")]
         // self.timing_collector.enter();
 
-        self.processor.process(self.iteration);
+        // self.processor.process(self.iteration);
         self.iteration += 1;
 
         // #[cfg(feature = "perf")]

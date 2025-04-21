@@ -5,9 +5,11 @@ use std::{
 
 use fancy_constructor::new;
 use indexmap::IndexMap;
+use open_modular_core::Vector;
 use uuid::Uuid;
 
 use crate::{
+    bus::BusReceiver,
     module::{
         Module,
         ModuleSource,
@@ -42,13 +44,16 @@ pub struct ProcessToken(pub(crate) usize);
 
 // Processor
 
-#[derive(Debug)]
+#[derive(new, Debug)]
 pub struct Processor<M>
 where
     M: Module,
 {
+    #[new(default)]
     args: ProcessArgs,
+    #[new(default)]
     modules: IndexMap<Uuid, SyncUnsafeCell<M>>,
+    receiver: BusReceiver,
 }
 
 impl<M> Processor<M>
@@ -136,82 +141,19 @@ impl<M> Processor<M>
 where
     M: Module,
 {
-    pub fn process(&mut self, iteration: u64) {
+    pub fn process<C>(&mut self, context: &C, iteration: u64, _output: &mut [Vector])
+    where
+        C: Clone,
+        M: Debug + ModuleSource<Context = C>,
+    {
         self.args.token.0 = (iteration % 2) as usize;
+
+        if let Some(protocol) = self.receiver.receive() {
+            protocol.apply(context, self);
+        }
+
         self.modules.values().for_each(|module| unsafe {
             (*module.get()).process(&self.args);
         });
     }
-}
-
-impl<M> Default for Processor<M>
-where
-    M: Module,
-{
-    fn default() -> Self {
-        Self {
-            args: ProcessArgs::default(),
-            modules: IndexMap::default(),
-        }
-    }
-}
-
-// -------------------------------------------------------------------------------------------------
-
-// Protocol
-
-#[derive(Clone, Debug)]
-pub enum ProcessorProtocol {
-    Add(ProcessorProtocolAdd),
-    Connect(ProcessorProtocolConnect),
-}
-
-impl ProcessorProtocol {
-    pub fn apply<C, M>(self, context: &C, processor: &mut Processor<M>)
-    where
-        C: Clone,
-        M: Debug + Module + ModuleSource<Context = C>,
-    {
-        match self {
-            Self::Add(add) => {
-                let module = M::get(&add.module, context.clone());
-
-                processor.add(add.instance, module);
-            }
-            Self::Connect(connect) => unsafe {
-                processor.connect(
-                    connect.input_instance,
-                    connect.input_port,
-                    connect.output_instance,
-                    connect.output_port,
-                );
-            },
-        }
-    }
-}
-
-impl From<ProcessorProtocolAdd> for ProcessorProtocol {
-    fn from(add: ProcessorProtocolAdd) -> Self {
-        Self::Add(add)
-    }
-}
-
-impl From<ProcessorProtocolConnect> for ProcessorProtocol {
-    fn from(connect: ProcessorProtocolConnect) -> Self {
-        Self::Connect(connect)
-    }
-}
-
-#[derive(new, Clone, Debug)]
-pub struct ProcessorProtocolAdd {
-    instance: Uuid,
-    module: Uuid,
-}
-
-#[derive(new, Clone, Debug)]
-pub struct ProcessorProtocolConnect {
-    input_instance: Uuid,
-    input_port: usize,
-    output_instance: Uuid,
-    output_port: usize,
 }

@@ -3,8 +3,11 @@ bitflags.workspace          = true
 bon.workspace               = true
 derive_more.workspace       = true
 fancy_constructor.workspace = true
+num_enum.workspace          = true
 open-modular-core.workspace = true
 rtaudio-sys.workspace       = true
+serde.workspace             = true
+snafu.workspace             = true
 
 [lints]
 workspace = true

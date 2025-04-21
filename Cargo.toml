@@ -16,10 +16,14 @@ derive_more       = { features = ["full"], version = "2" }
 fancy_constructor = "2"
 indexmap          = "2.8"
 log               = { features = ["kv", "std"], version = "0.4" }
+num_enum          = "0.7"
 oneshot           = { default-features = false, features = ["std"], version = "0.1" }
 proc-macro2       = "1"
 quote             = "1"
 rtaudio-sys       = "0.3"
+rtrb              = "0.3"
+serde             = { features = ["derive"], version = "1" }
+snafu             = "0.8"
 syn               = "2"
 thread-priority   = "1"
 uuid              = { features = ["v4"], version = "1" }
@@ -29,7 +33,6 @@ uuid              = { features = ["v4"], version = "1" }
 open-modular-core               = { path = "crates/core/open-modular-core" }
 open-modular-engine             = { path = "crates/core/open-modular-engine" }
 open-modular-engine-macros      = { path = "crates/core/open-modular-engine-macros" }
-open-modular-io                 = { path = "crates/core/open-modular-io" }
 open-modular-io-audio           = { path = "crates/core/open-modular-io-audio" }
 open-modular-performance        = { path = "crates/core/open-modular-performance" }
 open-modular-runtime            = { path = "crates/core/open-modular-runtime" }

@@ -11,8 +11,12 @@ use open_modular_engine::module::{
 
 pub trait Runtime {
     type Context;
+    type Error;
 
-    fn run<M>(&self)
+    /// # TODO
+    ///
+    /// # Errors
+    fn run<M>(&self) -> Result<(), Self::Error>
     where
         M: Debug + Module + ModuleSource<Context = Self::Context>;
 }

@@ -12,7 +12,7 @@ use std::{
 // Constants
 
 pub static BUFFER_FRAMES: usize = 64;
-pub static MAX_CHANNELS: usize = 16;
+pub static MAX_CHANNELS: usize = 16; // TODO: Remove MAX
 pub static MIN_CHANNELS: usize = 2;
 pub static NANOSECONDS_PER_SECOND: usize = 1_000_000_000;
 pub static NANOSECONDS_PER_FRAME: usize = NANOSECONDS_PER_SECOND / SAMPLE_RATE;
